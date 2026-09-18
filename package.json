@@ -1,0 +1,21 @@
+{
+  "name": "invoiser",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Simple project invoicing tool — biller/client info, line items, auto-calculated totals, signature upload, bank details, print/PDF export, and a saved email address book.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "html2pdf.js": "^0.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.4.2"
+  }
+}
