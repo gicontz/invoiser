@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Toolbar from './components/Toolbar.jsx'
 import InvoiceEditorPage from './pages/InvoiceEditorPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
 
 function ComingSoonPage({ title }) {
   return (
@@ -22,7 +23,7 @@ export default function App() {
       <Toolbar />
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<ComingSoonPage title="Dashboard" />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/invoices" element={<ComingSoonPage title="Invoices" />} />
         <Route path="/invoices/new" element={<InvoiceEditorPage />} />
         <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
