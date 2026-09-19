@@ -39,4 +39,6 @@ export const api = {
   deletePayment: (id) => request(`/payments/${id}`, { method: 'DELETE' }),
 
   getDashboard: () => request('/dashboard'),
+
+  sendEmail: (data) => request('/send-email', { method: 'POST', body: JSON.stringify(data) }),
 }
