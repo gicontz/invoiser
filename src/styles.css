@@ -218,6 +218,19 @@ input, textarea, select {
 }
 
 /* ---------- Items table ---------- */
+.items-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.items-header-hint {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
 .items table {
   width: 100%;
   border-collapse: collapse;
@@ -233,6 +246,7 @@ input, textarea, select {
   padding: 8px 6px;
 }
 
+.col-group { width: 16%; }
 .col-qty, .col-unit, .col-rate, .col-subtotal { width: 12%; }
 .col-remove { width: 30px; }
 
@@ -378,6 +392,36 @@ input, textarea, select {
   margin: 8px 0 0;
   font-size: 0.78rem;
   color: var(--danger);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.signatory-checkbox {
+  margin-top: 10px;
+}
+
+.signatory-preview {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+}
+
+.signatory-preview strong {
+  color: var(--ink);
+}
+
+.signatory-name-input {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
 }
 
 /* ---------- Modals ---------- */

@@ -18,12 +18,33 @@ import AddressBookModal from './components/AddressBookModal.jsx'
 import DesignMarketplace from './components/DesignMarketplace.jsx'
 import PreviewPane from './components/PreviewPane.jsx'
 import { DEFAULT_DESIGN_ID, renderInvoiceHtml } from './designs/index.js'
+import { formatDate } from './designs/templates.js'
 
 const emptyClient = { name: '', address: '', email: '', phone: '' }
 const emptyBank = { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '' }
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
+}
+
+// Both dates are plain YYYY-MM-DD strings; appending T00:00:00 (no "Z")
+// parses each as local midnight so their difference isn't skewed by the
+// classic UTC-parse/local-format timezone shift.
+function daysBetween(startIso, endIso) {
+  if (!startIso || !endIso) return null
+  const start = new Date(`${startIso}T00:00:00`)
+  const end = new Date(`${endIso}T00:00:00`)
+  return Math.round((end - start) / (1000 * 60 * 60 * 24))
+}
+
+// Recognizes our own auto-generated text so we know it's still safe to
+// regenerate — once a user edits notes into something else, we leave it alone.
+const AUTO_PAYMENT_NOTE = /^Payment due (within \d+ days? of invoice date|upon receipt)\.$/
+
+function paymentNoteFor(invoiceDate, dueDate) {
+  const days = daysBetween(invoiceDate, dueDate)
+  if (days === null || days <= 0) return 'Payment due upon receipt.'
+  return `Payment due within ${days} day${days === 1 ? '' : 's'} of invoice date.`
 }
 
 // Seeded draft: PMC B2B WordPress hours, Sept 15-18 2026. Rates left blank to fill in.
@@ -69,6 +90,9 @@ export default function App() {
   // Which output design (print/PDF/email) is selected — see designs/index.js.
   const [selectedDesignId, setSelectedDesignId] = useLocalStorage('invoiser_selected_design', DEFAULT_DESIGN_ID)
   const [previewOpen, setPreviewOpen] = useLocalStorage('invoiser_preview_open', false)
+  // Display preference, not invoice data — persists across invoices like
+  // previewOpen. See designs/templates.js for what it changes in the output.
+  const [separateItems, setSeparateItems] = useLocalStorage('invoiser_separate_items', false)
 
   // ---- Current invoice state (restored from a saved draft, if any) ----
   const [biller, setBiller] = useState(initialDraft?.biller ?? billerDefault)
@@ -85,9 +109,20 @@ export default function App() {
   const [taxPercent, setTaxPercent] = useState(initialDraft?.taxPercent ?? 0)
   const [discountAmount, setDiscountAmount] = useState(initialDraft?.discountAmount ?? 0)
   const [capAmount, setCapAmount] = useState(initialDraft?.capAmount ?? '')
-  const [notes, setNotes] = useState(initialDraft?.notes ?? 'Payment due within 7 days of invoice date.')
+  // If a saved draft's notes still look like our own auto-generated text,
+  // recompute it fresh against the restored invoiceDate/dueDate rather than
+  // trusting the stored string — keeps the "X days" figure correct even if
+  // it was saved before a change, and self-heals any drift. Custom notes
+  // (anything that doesn't match) are restored as-is.
+  const [notes, setNotes] = useState(() => {
+    const draftNotes = initialDraft?.notes
+    if (draftNotes && !AUTO_PAYMENT_NOTE.test(draftNotes.trim())) return draftNotes
+    return paymentNoteFor(meta.invoiceDate, meta.dueDate)
+  })
   const [bank, setBank] = useState(initialDraft?.bank ?? bankDefault)
   const [signature, setSignature] = useState(initialDraft?.signature ?? signatureDefault)
+  const [sameAsBusiness, setSameAsBusiness] = useState(initialDraft?.sameAsBusiness ?? true)
+  const [signatoryName, setSignatoryName] = useState(initialDraft?.signatoryName ?? '')
 
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [addressBookOpen, setAddressBookOpen] = useState(false)
@@ -98,14 +133,30 @@ export default function App() {
     [items, taxPercent, discountAmount, capAmount],
   )
 
+  // Sole proprietors sign with their own business name — no need to retype
+  // it as a separate signatory. Only ask for a distinct name when unchecked.
+  const resolvedSignatoryName = sameAsBusiness ? biller.name : signatoryName
+
   // The full HTML document for the invoice in the selected design — the
   // single source of truth for the preview iframe, Print, and PDF/email
   // export. Recomputing this is cheap (string building); what's expensive
   // is reloading the iframe, which is why refreshing it (below) is
   // debounced instead of happening on every keystroke.
   const invoiceHtml = useMemo(
-    () => renderInvoiceHtml(selectedDesignId, { biller, client, meta, items, notes, totals, bank, signature }),
-    [selectedDesignId, biller, client, meta, items, notes, totals, bank, signature],
+    () =>
+      renderInvoiceHtml(selectedDesignId, {
+        biller,
+        client,
+        meta,
+        items,
+        notes,
+        totals,
+        bank,
+        signature,
+        signatoryName: resolvedSignatoryName,
+        separateItems,
+      }),
+    [selectedDesignId, biller, client, meta, items, notes, totals, bank, signature, resolvedSignatoryName, separateItems],
   )
 
   // Keep the on-screen preview roughly live while it's open, without
@@ -124,9 +175,10 @@ export default function App() {
     setInvoiceCounter(nextCount)
     setBiller(billerDefault)
     setClient(emptyClient)
+    const nextInvoiceDate = todayIso()
     setMeta({
       invoiceNumber: `INV-${String(nextCount).padStart(4, '0')}`,
-      invoiceDate: todayIso(),
+      invoiceDate: nextInvoiceDate,
       dueDate: '',
       currency: meta.currency,
     })
@@ -134,9 +186,11 @@ export default function App() {
     setTaxPercent(0)
     setDiscountAmount(0)
     setCapAmount('')
-    setNotes('Payment due within 7 days of invoice date.')
+    setNotes(paymentNoteFor(nextInvoiceDate, ''))
     setBank(bankDefault)
     setSignature(signatureDefault)
+    setSameAsBusiness(true)
+    setSignatoryName('')
     try {
       window.localStorage.removeItem(DRAFT_KEY)
     } catch {
@@ -146,7 +200,10 @@ export default function App() {
   }
 
   const handleSaveDraft = () => {
-    const draft = { biller, client, meta, items, taxPercent, discountAmount, capAmount, notes, bank, signature }
+    const draft = {
+      biller, client, meta, items, taxPercent, discountAmount, capAmount, notes, bank, signature,
+      sameAsBusiness, signatoryName,
+    }
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
       setDraftStatus('Draft saved')
@@ -168,6 +225,18 @@ export default function App() {
       enqueueSnackbar('Import failed — invalid file', { variant: 'error' })
       setTimeout(() => setDraftStatus(''), 2000)
     }
+  }
+
+  const handleMetaChange = (nextMeta) => {
+    const dueDateChanged = nextMeta.dueDate !== meta.dueDate
+    const invoiceDateChanged = nextMeta.invoiceDate !== meta.invoiceDate
+    // Keep the payment-terms note in sync with the due date — but only
+    // while it still looks like our own auto-generated text, so a
+    // user's custom notes are never silently overwritten.
+    if ((dueDateChanged || invoiceDateChanged) && AUTO_PAYMENT_NOTE.test(notes.trim())) {
+      setNotes(paymentNoteFor(nextMeta.invoiceDate, nextMeta.dueDate))
+    }
+    setMeta(nextMeta)
   }
 
   const handleLoadClient = (savedClient) => {
@@ -194,17 +263,19 @@ export default function App() {
     enqueueSnackbar('Client saved', { variant: 'success' })
   }
 
+  // No toast here on success — print() can block until the OS dialog
+  // closes, so a toast fired after it lands late/out of order. Only
+  // surface this if something actually goes wrong.
   const handlePrint = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
     previewFrameRef.current?.print()
-    enqueueSnackbar('Opening print dialog…', { variant: 'info' })
   }
 
   const handleDownloadPdf = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
-    const target = previewFrameRef.current?.getCaptureTarget()
+    const pages = previewFrameRef.current?.getCapturePages()
     try {
-      await downloadInvoicePdf(target, `${meta.invoiceNumber || 'invoice'}.pdf`)
+      await downloadInvoicePdf(pages, `${meta.invoiceNumber || 'invoice'}.pdf`)
       enqueueSnackbar('PDF downloaded', { variant: 'success' })
     } catch {
       enqueueSnackbar('Could not generate the PDF', { variant: 'error' })
@@ -270,7 +341,7 @@ export default function App() {
   const defaultBody =
     `Hi ${client.name || 'there'},\n\n` +
     `Please find attached invoice ${meta.invoiceNumber} for ${meta.currency} ${totals.billed.toFixed(2)}, ` +
-    `due ${meta.dueDate || 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
+    `due ${meta.dueDate ? formatDate(meta.dueDate) : 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
 
   return (
     <>
@@ -292,7 +363,7 @@ export default function App() {
       <div className={`app${previewOpen ? ' preview-open' : ''}`}>
         <div className="app-body">
           <main className="sheet">
-            <InvoiceMeta meta={meta} onChange={setMeta} />
+            <InvoiceMeta meta={meta} onChange={handleMetaChange} />
 
             <section className="parties">
               <BillerCard
@@ -309,7 +380,13 @@ export default function App() {
               />
             </section>
 
-            <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
+            <ItemsTable
+              items={items}
+              currency={meta.currency}
+              onChange={setItems}
+              separateItems={separateItems}
+              onToggleSeparateItems={setSeparateItems}
+            />
 
             <div className="card notes">
               <label htmlFor="notes">Notes / Terms</label>
@@ -339,6 +416,11 @@ export default function App() {
                 signature={signature}
                 onChange={setSignature}
                 onSaveDefault={handleSaveSignatureDefault}
+                billerName={biller.name}
+                sameAsBusiness={sameAsBusiness}
+                onSameAsBusinessChange={setSameAsBusiness}
+                signatoryName={signatoryName}
+                onSignatoryNameChange={setSignatoryName}
               />
             </section>
           </main>

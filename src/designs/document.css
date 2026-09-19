@@ -11,6 +11,16 @@
   --doc-radius: 10px;
 }
 
+/* Explicit, consistent print margins — without this the browser falls back
+   to its own default (varies by browser/OS), which also fights Flat's
+   full-bleed header band (it assumes a controlled outer margin, not a
+   card floating inside an unpredictable one). PDF export has its own,
+   separate margin — see PAGE_MARGIN_MM in utils/pdf.js. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -21,13 +31,56 @@ body {
   padding: 24px;
 }
 
+/* .preview-sheet just stacks each .doc-page with a real gap between them —
+   the "paper" look (background/shadow/radius) lives on .doc-page itself so
+   a second page (e.g. Order Details) reads as a genuinely separate sheet
+   on screen, not a dashed line inside one continuous card. */
 .preview-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.doc-page {
+  position: relative;
   background: var(--doc-paper);
   border-radius: var(--doc-radius);
   padding: 32px;
   box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
-  max-width: 780px;
-  margin: 0 auto;
+  /* A4's own ratio (210:297) — a short invoice still fills a full page
+     instead of leaving dead space below it; a page whose content is
+     taller than that (many items, a long Order Details page) simply
+     grows past it rather than getting clipped. */
+  aspect-ratio: 210 / 297;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-page-number {
+  position: absolute;
+  bottom: 10px;
+  right: 32px;
+  font-size: 0.7rem;
+  color: var(--doc-ink-soft);
+}
+
+.nothing-follows-row td {
+  padding-top: 10px !important;
+  text-align: center !important;
+  font-size: 0.78rem;
+  color: var(--doc-ink-soft);
+  letter-spacing: 0.04em;
+  border-bottom: none !important;
+}
+
+.nothing-follows {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--doc-ink-soft);
+  letter-spacing: 0.04em;
 }
 
 .doc-head {
@@ -156,7 +209,6 @@ body {
 }
 
 .preview-bank {
-  margin-bottom: 12px;
   font-size: 0.82rem;
   color: var(--doc-ink-soft);
 }
@@ -170,13 +222,121 @@ body {
 
 .preview-bank p { margin: 0; }
 
-.preview-signature img {
+/* ---------- Footer: bank (left) + signature (right) ---------- */
+.doc-footer {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  /* .doc-page is a column flexbox (see above) — auto absorbs all the
+     leftover space above this last child, anchoring the footer to the
+     bottom of the page instead of leaving dead space below it. */
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.doc-footer-signature {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.doc-signature {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.doc-signature-img {
   max-height: 60px;
-  max-width: 100%;
+  max-width: 180px;
   object-fit: contain;
+  margin-bottom: 4px;
+}
+
+.doc-signature-blank {
+  height: 60px;
+}
+
+.doc-signature-line {
+  width: 180px;
+  border-top: 1px solid var(--doc-line);
+  margin-bottom: 6px;
+}
+
+.doc-signatory-name {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.doc-signatory-label {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: var(--doc-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Order Details (second page, Separate Items only) ---------- */
+.order-details-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--doc-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--doc-line);
+}
+
+.order-detail-group {
+  margin-bottom: 18px;
+}
+
+.order-detail-name {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.order-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--doc-line);
+  font-size: 0.85rem;
+}
+
+.order-detail-desc {
+  flex: 1;
+  white-space: normal;
+}
+
+.order-detail-meta {
+  color: var(--doc-ink-soft);
+  white-space: nowrap;
 }
 
 @media print {
   body { padding: 0; background: #fff; }
-  .preview-sheet { box-shadow: none; max-width: 100%; margin: 0; }
+  .preview-sheet { max-width: 100%; margin: 0; gap: 0; }
+  /* Flatten the on-screen "floating card" look — a physical printed page
+     doesn't need a drop shadow or rounded corners to read as its own
+     page; the real page break (below) already separates them. !important
+     because a theme's own .doc-page rule (e.g. Elegant's hairline border)
+     is otherwise more specific than this plain selector. */
+  .doc-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+  /* The Order Details page is a real second physical page when printing —
+     PDF export instead captures each .doc-page as its own image (see
+     utils/pdf.js), so this rule only matters for native browser print. */
+  .order-details {
+    break-before: page;
+    page-break-before: always;
+  }
 }
