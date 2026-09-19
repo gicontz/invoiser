@@ -109,7 +109,16 @@ export default function App() {
   const [taxPercent, setTaxPercent] = useState(initialDraft?.taxPercent ?? 0)
   const [discountAmount, setDiscountAmount] = useState(initialDraft?.discountAmount ?? 0)
   const [capAmount, setCapAmount] = useState(initialDraft?.capAmount ?? '')
-  const [notes, setNotes] = useState(initialDraft?.notes ?? paymentNoteFor(meta.invoiceDate, meta.dueDate))
+  // If a saved draft's notes still look like our own auto-generated text,
+  // recompute it fresh against the restored invoiceDate/dueDate rather than
+  // trusting the stored string — keeps the "X days" figure correct even if
+  // it was saved before a change, and self-heals any drift. Custom notes
+  // (anything that doesn't match) are restored as-is.
+  const [notes, setNotes] = useState(() => {
+    const draftNotes = initialDraft?.notes
+    if (draftNotes && !AUTO_PAYMENT_NOTE.test(draftNotes.trim())) return draftNotes
+    return paymentNoteFor(meta.invoiceDate, meta.dueDate)
+  })
   const [bank, setBank] = useState(initialDraft?.bank ?? bankDefault)
   const [signature, setSignature] = useState(initialDraft?.signature ?? signatureDefault)
   const [sameAsBusiness, setSameAsBusiness] = useState(initialDraft?.sameAsBusiness ?? true)
