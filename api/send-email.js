@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer'
 import { readUserData } from './_lib/storage.js'
-import { renderInvoicePdfBuffer } from './_lib/renderInvoicePdf.js'
-import { computeTotals } from '../src/utils/calc.js'
+import { renderEmailHtml } from './_lib/renderEmailHtml.js'
 
 // Gmail sending path (issue #27) — env vars, not per-instance Settings.
 // Temporarily enabled in this production deployment too: this is currently
@@ -10,6 +9,12 @@ import { computeTotals } from '../src/utils/calc.js'
 // Once the app goes public, this reverts to local-dev-only (or is replaced
 // outright) and #30 (Resend, with a verified sending domain) becomes the
 // real production path.
+//
+// Fetches the PDF from GET /api/invoices/:id/pdf (an internal HTTP call to
+// its sibling function) rather than importing renderInvoicePdf.js directly —
+// that pulls in Playwright + @sparticuz/chromium (~76MB), and having both
+// this function and pdf.js bundle it independently pushed the deployment
+// over Vercel's total size limit and broke every route, not just this one.
 export const config = { maxDuration: 30 }
 
 export default async function handler(req, res) {
@@ -36,28 +41,13 @@ export default async function handler(req, res) {
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
 
   const biller = settings.biller || { name: '', address: '', email: '', phone: '' }
-  const totals = computeTotals(invoice.items, invoice.taxPercent, invoice.discountAmount, invoice.capAmount)
-  const invoiceData = {
-    biller,
-    client: invoice.client,
-    meta: {
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceDate: invoice.invoiceDate,
-      dueDate: invoice.dueDate,
-      currency: invoice.currency,
-    },
-    items: invoice.items,
-    notes: invoice.notes,
-    totals,
-    bank: invoice.bank,
-    signature: invoice.signature,
-    signatoryName: invoice.sameAsBusiness ? biller.name : invoice.signatoryName,
-    separateItems: invoice.separateItems,
-  }
 
   let pdfBuffer
   try {
-    pdfBuffer = await renderInvoicePdfBuffer(invoice.selectedDesignId, invoiceData)
+    const proto = req.headers['x-forwarded-proto'] || (req.headers.host?.includes('localhost') ? 'http' : 'https')
+    const pdfRes = await fetch(`${proto}://${req.headers.host}/api/invoices/${invoiceId}/pdf`)
+    if (!pdfRes.ok) throw new Error(`PDF endpoint returned ${pdfRes.status}`)
+    pdfBuffer = Buffer.from(await pdfRes.arrayBuffer())
   } catch (error) {
     console.error('PDF generation failed', error)
     return res.status(500).json({ error: 'Could not generate the invoice PDF' })
@@ -76,6 +66,7 @@ export default async function handler(req, res) {
       bcc: bcc || undefined,
       subject,
       text: body,
+      html: renderEmailHtml({ billerName: biller.name, bodyText: body }),
       attachments: [
         {
           filename: `${invoice.invoiceNumber || 'invoice'}.pdf`,

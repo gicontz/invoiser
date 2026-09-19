@@ -30,8 +30,9 @@ export default function EmailModal({ open, onClose, addressBook, defaultSubject,
         </div>
         <div className="modal-body">
           <p className="modal-hint">
-            A PDF of this invoice will download automatically — attach it to the email that opens in
-            your default mail app (browsers can't auto-attach files for security reasons).
+            We'll send this on your behalf, PDF attached. If email sending isn't set up on this
+            instance, a PDF downloads instead and your own mail app opens so you can attach it and
+            send it yourself.
           </p>
 
           <label htmlFor="emailTo">To</label>
@@ -78,7 +79,7 @@ export default function EmailModal({ open, onClose, addressBook, defaultSubject,
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <AsyncButton className="btn btn-primary" onClick={handleSend}>Download PDF &amp; Open Email</AsyncButton>
+          <AsyncButton className="btn btn-primary" onClick={handleSend}>Send Email</AsyncButton>
         </div>
       </div>
     </div>
