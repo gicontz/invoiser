@@ -1,4 +1,5 @@
 import { readUserData, updateUserData, respondToStorageError, RouteError } from '../_lib/storage.js'
+import { readAllInvoices } from '../_lib/invoiceStorage.js'
 
 // Delete policy (epic #14): block rather than orphan clientId references on
 // existing invoices.
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const { data: invoices } = await readUserData('invoices')
+    const invoices = await readAllInvoices()
     const referenced = invoices.some((inv) => inv.clientId === id)
     if (referenced) {
       return res.status(409).json({ error: 'Client is used on one or more invoices' })

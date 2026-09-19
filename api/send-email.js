@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { readUserData } from './_lib/storage.js'
+import { findInvoice } from './_lib/invoiceStorage.js'
 import { renderEmailHtml } from './_lib/renderEmailHtml.js'
 
 // Two possible sending providers, both env-var configured (see #27/#30 —
@@ -69,12 +70,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invoiceId and to are required' })
   }
 
-  const [{ data: invoices }, { data: settings }] = await Promise.all([
-    readUserData('invoices'),
+  const [found, { data: settings }] = await Promise.all([
+    findInvoice(invoiceId),
     readUserData('settings'),
   ])
-  const invoice = invoices.find((inv) => inv.id === invoiceId)
-  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  if (!found) return res.status(404).json({ error: 'Invoice not found' })
+  const { invoice } = found
 
   const biller = settings.biller || { name: '', address: '', email: '', phone: '' }
 

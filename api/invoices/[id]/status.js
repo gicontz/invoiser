@@ -1,4 +1,5 @@
-import { updateUserData, respondToStorageError, RouteError } from '../../_lib/storage.js'
+import { updateInvoice } from '../../_lib/invoiceStorage.js'
+import { respondToStorageError, RouteError } from '../../_lib/storage.js'
 
 // Policy (epic #13): sent can't be undone, cancelled is terminal — create a
 // new invoice instead of reopening one.
@@ -20,25 +21,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { invoice } = await updateUserData('invoices', (invoices) => {
-      const index = invoices.findIndex((inv) => inv.id === id)
-      if (index === -1) throw new RouteError(404, 'Invoice not found')
-
-      const current = invoices[index]
+    const updated = await updateInvoice(id, (current) => {
       if (!ALLOWED_FROM[status].includes(current.status)) {
         throw new RouteError(409, `Cannot mark ${status} from ${current.status}`)
       }
-
       const now = new Date().toISOString()
-      const updated = { ...current, status, updatedAt: now }
-      if (status === 'sent') updated.sentAt = now
-      if (status === 'cancelled') updated.cancelledAt = now
-
-      const next = [...invoices]
-      next[index] = updated
-      return { data: next, invoice: updated }
+      const next = { ...current, status, updatedAt: now }
+      if (status === 'sent') next.sentAt = now
+      if (status === 'cancelled') next.cancelledAt = now
+      return next
     })
-    return res.status(200).json(invoice)
+    return res.status(200).json(updated)
   } catch (error) {
     if (respondToStorageError(error, res)) return
     throw error

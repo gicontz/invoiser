@@ -1,4 +1,5 @@
 import { readUserData, updateUserData, respondToStorageError, RouteError } from '../_lib/storage.js'
+import { readAllInvoices } from '../_lib/invoiceStorage.js'
 
 // Same delete policy as clients (epic #15): block rather than orphan
 // bankAccountId references on existing invoices.
@@ -35,7 +36,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const { data: invoices } = await readUserData('invoices')
+    const invoices = await readAllInvoices()
     const referenced = invoices.some((inv) => inv.bankAccountId === id)
     if (referenced) {
       return res.status(409).json({ error: 'Bank account is used on one or more invoices' })

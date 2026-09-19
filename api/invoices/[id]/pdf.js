@@ -1,4 +1,5 @@
 import { readUserData } from '../../_lib/storage.js'
+import { findInvoice } from '../../_lib/invoiceStorage.js'
 import { renderInvoicePdfBuffer } from '../../_lib/renderInvoicePdf.js'
 import { computeTotals } from '../../../src/utils/calc.js'
 
@@ -17,12 +18,12 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query
-  const [{ data: invoices }, { data: settings }] = await Promise.all([
-    readUserData('invoices'),
+  const [found, { data: settings }] = await Promise.all([
+    findInvoice(id),
     readUserData('settings'),
   ])
-  const invoice = invoices.find((inv) => inv.id === id)
-  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  if (!found) return res.status(404).json({ error: 'Invoice not found' })
+  const { invoice } = found
 
   const biller = settings.biller || { name: '', address: '', email: '', phone: '' }
   const totals = computeTotals(invoice.items, invoice.taxPercent, invoice.discountAmount, invoice.capAmount)

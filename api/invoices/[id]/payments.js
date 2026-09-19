@@ -1,4 +1,5 @@
-import { updateUserData, respondToStorageError, RouteError } from '../../_lib/storage.js'
+import { updateInvoice } from '../../_lib/invoiceStorage.js'
+import { respondToStorageError } from '../../_lib/storage.js'
 
 // Manual ledger entry, not a payment gateway (memory/decisions.md D7).
 // Auto-flips to 'paid' once payments cover the total.
@@ -19,11 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { invoice } = await updateUserData('invoices', (invoices) => {
-      const index = invoices.findIndex((inv) => inv.id === id)
-      if (index === -1) throw new RouteError(404, 'Invoice not found')
-
-      const current = invoices[index]
+    const updated = await updateInvoice(id, (current) => {
       const payment = {
         id: crypto.randomUUID(),
         amount: parsedAmount,
@@ -33,18 +30,14 @@ export default async function handler(req, res) {
       }
       const payments = [...(current.payments || []), payment]
       const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
-      const updated = {
+      return {
         ...current,
         payments,
         status: totalPaid >= current.total && current.status === 'sent' ? 'paid' : current.status,
         updatedAt: new Date().toISOString(),
       }
-
-      const next = [...invoices]
-      next[index] = updated
-      return { data: next, invoice: updated }
     })
-    return res.status(201).json(invoice)
+    return res.status(201).json(updated)
   } catch (error) {
     if (respondToStorageError(error, res)) return
     throw error
