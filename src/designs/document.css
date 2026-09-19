@@ -31,13 +31,23 @@ body {
   padding: 24px;
 }
 
+/* .preview-sheet just stacks each .doc-page with a real gap between them —
+   the "paper" look (background/shadow/radius) lives on .doc-page itself so
+   a second page (e.g. Order Details) reads as a genuinely separate sheet
+   on screen, not a dashed line inside one continuous card. */
 .preview-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.doc-page {
   background: var(--doc-paper);
   border-radius: var(--doc-radius);
   padding: 32px;
   box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
-  max-width: 780px;
-  margin: 0 auto;
 }
 
 .doc-head {
@@ -272,25 +282,18 @@ body {
   white-space: nowrap;
 }
 
-/* On screen, show where the next .doc-page (e.g. Order Details) will
-   start printing as its own physical page — a real break-before only
-   takes visual effect once actually paginating (print/PDF), so without
-   this the preview would just show one continuous scroll with no hint
-   that a page boundary exists. */
-.doc-page + .doc-page {
-  margin-top: 40px;
-  padding-top: 32px;
-  border-top: 2px dashed var(--doc-line);
-}
-
 @media print {
   body { padding: 0; background: #fff; }
-  .preview-sheet { box-shadow: none; max-width: 100%; margin: 0; }
-  /* The real page break replaces the on-screen divider above. */
-  .doc-page + .doc-page {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
+  .preview-sheet { max-width: 100%; margin: 0; gap: 0; }
+  /* Flatten the on-screen "floating card" look — a physical printed page
+     doesn't need a drop shadow or rounded corners to read as its own
+     page; the real page break (below) already separates them. !important
+     because a theme's own .doc-page rule (e.g. Elegant's hairline border)
+     is otherwise more specific than this plain selector. */
+  .doc-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
   }
   /* The Order Details page is a real second physical page when printing —
      PDF export instead captures each .doc-page as its own image (see
