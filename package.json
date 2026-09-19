@@ -13,8 +13,6 @@
   "dependencies": {
     "@sparticuz/chromium": "^153.0.0",
     "@vercel/blob": "^2.8.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
     "nodemailer": "^10.0.10",
     "notistack": "^3.0.2",
     "playwright-core": "^1.63.0",

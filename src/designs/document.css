@@ -15,8 +15,8 @@
    document's breathing room, so an added browser margin on top of it was
    redundant, and it fought Flat's full-bleed header band (which assumes a
    controlled outer edge, not a card floating inside an unpredictable one).
-   PDF export has its own, separate margin — see PAGE_MARGIN_MM in
-   utils/pdf.js. */
+   PDF export (api/_lib/renderInvoicePdf.js) renders this same stylesheet
+   through Playwright, so it gets this same margin automatically. */
 @page {
   size: A4;
   margin: 0;
@@ -333,9 +333,9 @@ body {
     border-radius: 0 !important;
     border: none !important;
   }
-  /* The Order Details page is a real second physical page when printing —
-     PDF export instead captures each .doc-page as its own image (see
-     utils/pdf.js), so this rule only matters for native browser print. */
+  /* The Order Details page is a real second physical page both when
+     printing and in PDF export — Playwright's page.pdf() renders this same
+     @media print stylesheet (see api/_lib/renderInvoicePdf.js). */
   .order-details {
     break-before: page;
     page-break-before: always;

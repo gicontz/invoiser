@@ -25,6 +25,10 @@ export async function renderInvoicePdfBuffer(designId, invoiceData) {
   try {
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle' })
+    // Explicit rather than relying on page.pdf()'s default media type — the
+    // document's own @media print rules (page breaks, shadow removal) must
+    // apply here the same way they do for native browser printing.
+    await page.emulateMedia({ media: 'print' })
     return await page.pdf({ format: 'A4', printBackground: true })
   } finally {
     await browser.close()

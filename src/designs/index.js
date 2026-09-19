@@ -44,7 +44,8 @@ const FONTS_IMPORT =
 // Builds the full standalone HTML document for the invoice in the given
 // design. This one string is the single source of truth for what the user
 // sees in the preview iframe, what gets printed (iframe.contentWindow.print()),
-// and what html2canvas captures for PDF/email — see PreviewPane.jsx.
+// and — via the Node-safe twin api/_lib/renderInvoiceHtml.js — what gets
+// rendered to a PDF for download/email (see api/_lib/renderInvoicePdf.js).
 export function renderInvoiceHtml(designId, data) {
   const body = renderInvoiceBody({ designId, ...data })
   return `<!DOCTYPE html>
