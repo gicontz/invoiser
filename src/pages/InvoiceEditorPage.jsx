@@ -4,7 +4,6 @@ import { enqueueSnackbar } from 'notistack'
 import { api } from '../api/client.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { computeTotals } from '../utils/calc.js'
-import { downloadInvoicePdf } from '../utils/pdf.js'
 
 import InvoiceMeta from '../components/InvoiceMeta.jsx'
 import BillerCard from '../components/BillerCard.jsx'
@@ -307,11 +306,21 @@ export default function InvoiceEditorPage() {
     previewFrameRef.current?.print()
   }
 
+  // Server-rendered via Playwright (api/invoices/[id]/pdf.js) — the same
+  // real-Chromium pipeline already used for emailed invoices, so this no
+  // longer depends on html2canvas's approximate text layout (the source of
+  // the old margin/letter-spacing export bugs).
   const handleDownloadPdf = async () => {
-    await previewFrameRef.current?.refresh(invoiceHtml)
-    const pages = previewFrameRef.current?.getCapturePages()
     try {
-      await downloadInvoicePdf(pages, `${meta.invoiceNumber || 'invoice'}.pdf`)
+      const res = await fetch(`/api/invoices/${invoiceId}/pdf`)
+      if (!res.ok) throw new Error('Could not generate the PDF')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${meta.invoiceNumber || 'invoice'}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
       enqueueSnackbar('PDF downloaded', { variant: 'success' })
     } catch {
       enqueueSnackbar('Could not generate the PDF', { variant: 'error' })

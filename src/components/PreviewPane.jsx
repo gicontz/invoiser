@@ -1,16 +1,17 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 
 // Isolated iframe hosting the rendered invoice HTML (see
-// designs/index.js#renderInvoiceHtml). It's the single source for three
-// things: the visible, toggleable on-screen preview; Print
+// designs/index.js#renderInvoiceHtml). It's the single source for the
+// visible, toggleable on-screen preview and for Print
 // (iframe.contentWindow.print() prints only the iframe's own document, so
 // nothing elsewhere on the page needs to be hidden via .no-print/@media
 // print, and real multi-page reflow — e.g. the Order Details page — is
-// handled by the browser's own pagination via CSS break-before); and
-// PDF/email export (html2canvas captures each `.doc-page` element as its
-// own A4 page — see utils/pdf.js). Always mounted, even while visually
-// closed, so Print/PDF work regardless of whether the user has the
-// preview panel open. Content is set via srcdoc — a full replace on
+// handled by the browser's own pagination via CSS break-before). PDF/email
+// export is server-rendered via Playwright instead (see
+// api/_lib/renderInvoicePdf.js) — the same HTML, but through the real
+// browser engine rather than this iframe. Always mounted, even while
+// visually closed, so Print still works regardless of whether the user has
+// the preview panel open. Content is set via srcdoc — a full replace on
 // refresh(), not a live React re-render.
 const PreviewPane = forwardRef(function PreviewPane({ open }, ref) {
   const iframeRef = useRef(null)
@@ -33,12 +34,6 @@ const PreviewPane = forwardRef(function PreviewPane({ open }, ref) {
     },
     print() {
       iframeRef.current?.contentWindow?.print()
-    },
-    getCapturePages() {
-      const doc = iframeRef.current?.contentDocument
-      if (!doc) return []
-      const pages = Array.from(doc.querySelectorAll('.doc-page'))
-      return pages.length > 0 ? pages : [doc.body?.firstElementChild].filter(Boolean)
     },
   }))
 

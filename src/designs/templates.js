@@ -1,8 +1,8 @@
 import { formatMoney, lineSubtotal } from '../utils/calc.js'
 
 // Plain string templates — no React. The result is set as an iframe's
-// srcdoc (preview/print) and used as html2canvas's capture source (PDF/
-// email), so it has to be a value, not a live component tree: see
+// srcdoc for preview/print, and rendered server-side via Playwright for
+// PDF/email, so it has to be a value, not a live component tree: see
 // PreviewPane.jsx and designs/index.js#renderInvoiceHtml.
 export function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (ch) => (
@@ -160,10 +160,12 @@ function renderSignatureBlock(signature, signatoryName) {
 // not from a separate DOM shape. See design/styles/*.md for the intent
 // behind each direction.
 //
-// Output is one or two `.doc-page` blocks (see utils/pdf.js and
-// PreviewPane.jsx#getCapturePages, which capture each as its own A4 page):
-// page 1 is always the invoice itself; a second "Order Details" page only
-// exists when Separate Items is on and produces any groups.
+// Output is one or two `.doc-page` blocks — page 1 is always the invoice
+// itself; a second "Order Details" page only exists when Separate Items is
+// on and produces any groups. Native print paginates them via @media
+// print's break-before rule (document.css); PDF export (renderInvoicePdf.js)
+// renders the same stylesheet through Playwright, so it paginates the same
+// way.
 export function renderInvoiceBody({
   designId, biller, client, meta, items, notes, totals, bank, signature, signatoryName, separateItems,
 }) {
