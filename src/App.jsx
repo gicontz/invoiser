@@ -3,6 +3,7 @@ import Toolbar from './components/Toolbar.jsx'
 import InvoiceEditorPage from './pages/InvoiceEditorPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import InvoicesListPage from './pages/InvoicesListPage.jsx'
+import ClientsPage from './pages/ClientsPage.jsx'
 
 function ComingSoonPage({ title }) {
   return (
@@ -28,7 +29,7 @@ export default function App() {
         <Route path="/invoices" element={<InvoicesListPage />} />
         <Route path="/invoices/new" element={<InvoiceEditorPage />} />
         <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
-        <Route path="/clients" element={<ComingSoonPage title="Clients" />} />
+        <Route path="/clients" element={<ClientsPage />} />
         <Route path="/bank-accounts" element={<ComingSoonPage title="Bank Accounts" />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
