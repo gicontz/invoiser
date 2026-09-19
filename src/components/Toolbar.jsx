@@ -18,7 +18,7 @@ export default function Toolbar({
 
   return (
     <header className="toolbar no-print">
-      <div className={`toolbar-inner${previewOpen ? ' toolbar-inner-wide' : ''}`}>
+      <div className="toolbar-inner">
         <div className="toolbar-brand">
           <span className="brand-mark">🧾</span>
           <span className="brand-name">Invoiser</span>

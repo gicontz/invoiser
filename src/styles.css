@@ -34,9 +34,9 @@ input, textarea, select {
 }
 
 /* ---------- Toolbar ----------
- * The toolbar sits outside .app in the DOM (see App.jsx) so its background/
- * border span the full browser width; .toolbar-inner constrains just the
- * brand + buttons to line up with the document content below.
+ * The toolbar sits outside .app in the DOM (see App.jsx) so it spans the
+ * full browser width, buttons included — not just the background lined up
+ * with the document content below.
  */
 .toolbar {
   position: sticky;
@@ -51,14 +51,7 @@ input, textarea, select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 12px 20px;
-  transition: max-width 0.15s ease;
-}
-
-.toolbar-inner-wide {
-  max-width: 1400px;
+  padding: 12px 24px;
 }
 
 .toolbar-brand {
