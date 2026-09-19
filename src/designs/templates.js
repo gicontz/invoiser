@@ -15,6 +15,16 @@ function optionalP(value, className) {
   return `<p class="${className}">${escapeHtml(value)}</p>`
 }
 
+// Classic official-receipt convention (required on PH BIR invoices, and a
+// sensible anti-tampering habit generally): close off the itemized list so
+// nothing can be added below the last printed line.
+const NOTHING_FOLLOWS = '**** Nothing Follows ****'
+
+function pageNumberHtml(pageNumber, totalPages) {
+  if (totalPages < 2) return ''
+  return `<div class="doc-page-number">Page ${pageNumber} of ${totalPages}</div>`
+}
+
 // Groups items by their `group` field (falling back to the item's own
 // description, then a generic label, so nothing is silently dropped when a
 // user hasn't assigned a group). Each group's subtotal is the sum of its
@@ -45,9 +55,15 @@ function renderFlatItemsTable(items, currency) {
       </tr>`,
     )
     .join('')
+  // This table is only ever rendered on page 1, and Separate Items being
+  // off means there's never a second page — so it's always the last
+  // (only) itemized page.
   return `<table class="preview-items">
     <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Subtotal</th></tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody>
+      ${rows}
+      <tr class="nothing-follows-row"><td colspan="4">${NOTHING_FOLLOWS}</td></tr>
+    </tbody>
   </table>`
 }
 
@@ -67,7 +83,7 @@ function renderGroupSummaryTable(groups, currency) {
   </table>`
 }
 
-function renderOrderDetailsPage(groups, currency, meta) {
+function renderOrderDetailsPage(groups, currency, meta, totalPages) {
   const groupBlocks = groups
     .map((group) => {
       const rows = group.items
@@ -88,12 +104,17 @@ function renderOrderDetailsPage(groups, currency, meta) {
     })
     .join('')
 
+  // Whenever this page exists, it's always the last (and only other)
+  // itemized page — page 1's summary table is an aggregate index, not
+  // itself the itemized list.
   return `<div class="doc-page order-details">
     <div class="order-details-header">
       <span>Invoice ${escapeHtml(meta.invoiceNumber) || '—'}</span>
       <span>Order Details</span>
     </div>
     ${groupBlocks}
+    <p class="nothing-follows">${NOTHING_FOLLOWS}</p>
+    ${pageNumberHtml(2, totalPages)}
   </div>`
 }
 
@@ -122,6 +143,8 @@ export function renderInvoiceBody({
   const currency = meta.currency
   const hasBankDetails = bank.holder || bank.bankName || bank.bankAddress || bank.accountNumber || bank.swift
   const groups = separateItems ? groupItems(items) : null
+  const hasPage2 = Boolean(separateItems && groups && groups.length > 0)
+  const totalPages = hasPage2 ? 2 : 1
 
   const cappedRow = totals.capped
     ? `<div><span>Logged total (uncapped)</span><span>${escapeHtml(formatMoney(totals.grandTotal, currency))}</span></div>`
@@ -187,9 +210,10 @@ export function renderInvoiceBody({
       <div class="doc-footer-bank">${bankBlock}</div>
       <div class="doc-footer-signature">${renderSignatureBlock(signature, signatoryName)}</div>
     </div>
+    ${pageNumberHtml(1, totalPages)}
   </div>`
 
-  const page2 = separateItems && groups.length > 0 ? renderOrderDetailsPage(groups, currency, meta) : ''
+  const page2 = hasPage2 ? renderOrderDetailsPage(groups, currency, meta, totalPages) : ''
 
   return `<div class="preview-sheet" data-design="${escapeHtml(designId)}">${page1}${page2}</div>`
 }
