@@ -19,6 +19,7 @@ import DesignMarketplace from '../components/DesignMarketplace.jsx'
 import PreviewPane from '../components/PreviewPane.jsx'
 import ErrorCard from '../components/ErrorCard.jsx'
 import Skeleton from '../components/Skeleton.jsx'
+import AsyncButton from '../components/AsyncButton.jsx'
 import { DEFAULT_DESIGN_ID, renderInvoiceHtml } from '../designs/index.js'
 import { formatDate } from '../designs/templates.js'
 
@@ -390,8 +391,8 @@ export default function InvoiceEditorPage() {
           <button type="button" className="btn-tiny" onClick={() => setPreviewOpen((prev) => !prev)}>
             {previewOpen ? 'Hide Preview' : 'Show Preview'}
           </button>
-          <button type="button" className="btn-tiny" onClick={handlePrint}>Print</button>
-          <button type="button" className="btn-tiny" onClick={handleDownloadPdf}>Download PDF</button>
+          <AsyncButton className="btn-tiny" onClick={handlePrint}>Print</AsyncButton>
+          <AsyncButton className="btn-tiny" onClick={handleDownloadPdf}>Download PDF</AsyncButton>
           <button type="button" className="btn btn-primary" onClick={() => setEmailModalOpen(true)}>Email</button>
         </div>
       </div>

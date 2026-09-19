@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AsyncButton from './AsyncButton.jsx'
 
 const emptyBank = { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '', isDefault: false }
 
@@ -41,13 +42,13 @@ export default function BankAccountFormModal({ initial, onClose, onSubmit }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button
+          <AsyncButton
             className="btn btn-primary"
             onClick={() => onSubmit(bank)}
             disabled={!bank.holder.trim() || !bank.bankName.trim()}
           >
             {initial ? 'Save changes' : 'Add bank account'}
-          </button>
+          </AsyncButton>
         </div>
       </div>
     </div>

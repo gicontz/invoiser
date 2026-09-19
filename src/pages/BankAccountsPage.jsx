@@ -5,6 +5,7 @@ import EmptyState from '../components/EmptyState.jsx'
 import ErrorCard from '../components/ErrorCard.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import BankAccountFormModal from '../components/BankAccountFormModal.jsx'
+import AsyncButton from '../components/AsyncButton.jsx'
 
 function maskAccountNumber(number) {
   if (!number) return '—'
@@ -90,7 +91,7 @@ export default function BankAccountsPage() {
               </div>
               <div className="entity-actions">
                 <button type="button" className="btn-tiny" onClick={() => setModal(bank)}>Edit</button>
-                <button type="button" className="btn-tiny" onClick={() => handleDelete(bank)}>Delete</button>
+                <AsyncButton className="btn-tiny" onClick={() => handleDelete(bank)}>Delete</AsyncButton>
               </div>
             </div>
           ))}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AsyncButton from './AsyncButton.jsx'
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
@@ -9,9 +10,7 @@ export default function RecordPaymentModal({ invoice, onClose, onSubmit }) {
   const [receivedAt, setReceivedAt] = useState(todayIso())
   const [note, setNote] = useState('')
 
-  const handleSubmit = () => {
-    onSubmit({ amount, receivedAt, note })
-  }
+  const handleSubmit = () => onSubmit({ amount, receivedAt, note })
 
   return (
     <div className="modal-backdrop open no-print">
@@ -50,7 +49,7 @@ export default function RecordPaymentModal({ invoice, onClose, onSubmit }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Record payment</button>
+          <AsyncButton className="btn btn-primary" onClick={handleSubmit}>Record payment</AsyncButton>
         </div>
       </div>
     </div>
