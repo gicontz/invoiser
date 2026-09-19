@@ -28,6 +28,9 @@ Muted, dusty tones — not candy pastels. Nothing here is a gradient; each color
 - One soft rounded accent shape in the header corner — a signature, not a watermark
 - Grand total sits in a filled sage pill, not a boxed table row
 - Line-item rows separated by whitespace, not hairlines — the softness carries the rhythm
+- When a cap is applied and exceeded, add a quiet "Logged total (uncapped)" line above the pill
+  in clay blush, and the pill itself reads "Total due (capped)" — the softness should make the
+  cap feel like a kindness, not a penalty
 
 ## Principle
 

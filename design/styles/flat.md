@@ -30,6 +30,10 @@ organizing work that borders would otherwise do.
   so radius itself becomes a meaningful signal ("this is a tag") rather than decoration
 - Items table uses alternating flat fog/white row bands instead of borders
 - Grand total is a solid cobalt block with white text — not a bordered cell
+- Totals block must support the optional capped-total row (`invoiser_selected_design` reads
+  from `computeTotals`, which now returns `billed`/`capped`): when a cap is set and exceeded,
+  show "Logged total (uncapped)" as a plain row above the cobalt grand-total block, which then
+  reads "Total Due (capped)" — fits the retainer/hourly-billing audience well
 
 ## Principle
 

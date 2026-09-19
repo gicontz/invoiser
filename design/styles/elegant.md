@@ -28,6 +28,9 @@ Almost monochrome. Brass appears only as thin rule lines — never as a backgrou
 - Generous outer margins, as if laid out for a physical letter
 - Items table: hairline row dividers only, right-aligned numeric columns
 - Grand total is set larger in the serif, not boxed or colored — weight does the work
+- When a cap is applied and exceeded, add a slate "Logged total (uncapped)" line above the
+  double hairline, and the grand-total label reads "Total Due (capped)" — a footnote in
+  restraint's own vocabulary, not a warning badge
 
 ## Principle
 
