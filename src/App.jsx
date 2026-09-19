@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import { computeTotals, makeEmptyItem } from './utils/calc.js'
 import { downloadInvoicePdf } from './utils/pdf.js'
@@ -16,7 +16,7 @@ import EmailModal from './components/EmailModal.jsx'
 import AddressBookModal from './components/AddressBookModal.jsx'
 import DesignMarketplace from './components/DesignMarketplace.jsx'
 import PreviewPane from './components/PreviewPane.jsx'
-import { DEFAULT_DESIGN_ID } from './designs/index.js'
+import { DEFAULT_DESIGN_ID, renderInvoiceHtml } from './designs/index.js'
 
 const emptyClient = { name: '', address: '', email: '', phone: '' }
 const emptyBank = { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '' }
@@ -52,7 +52,7 @@ function readSavedDraft() {
 }
 
 export default function App() {
-  const sheetRef = useRef(null)
+  const previewFrameRef = useRef(null)
   const [initialDraft] = useState(readSavedDraft)
   const [draftStatus, setDraftStatus] = useState('')
 
@@ -65,9 +65,7 @@ export default function App() {
   const [clients, setClients] = useLocalStorage('invoiser_clients', [])
   const [addressBook, setAddressBook] = useLocalStorage('invoiser_address_book', [])
   const [invoiceCounter, setInvoiceCounter] = useLocalStorage('invoiser_invoice_counter', 1)
-  // Which output design (print/PDF/email) is selected. Only 'default' is
-  // actually implemented right now — this is plumbing for the design
-  // marketplace future themes will plug into.
+  // Which output design (print/PDF/email) is selected — see designs/index.js.
   const [selectedDesignId, setSelectedDesignId] = useLocalStorage('invoiser_selected_design', DEFAULT_DESIGN_ID)
   const [previewOpen, setPreviewOpen] = useLocalStorage('invoiser_preview_open', false)
 
@@ -98,6 +96,26 @@ export default function App() {
     () => computeTotals(items, taxPercent, discountAmount, capAmount),
     [items, taxPercent, discountAmount, capAmount],
   )
+
+  // The full HTML document for the invoice in the selected design — the
+  // single source of truth for the preview iframe, Print, and PDF/email
+  // export. Recomputing this is cheap (string building); what's expensive
+  // is reloading the iframe, which is why refreshing it (below) is
+  // debounced instead of happening on every keystroke.
+  const invoiceHtml = useMemo(
+    () => renderInvoiceHtml(selectedDesignId, { biller, client, meta, items, notes, totals, bank, signature }),
+    [selectedDesignId, biller, client, meta, items, notes, totals, bank, signature],
+  )
+
+  // Keep the on-screen preview roughly live while it's open, without
+  // reloading the iframe on every keystroke.
+  useEffect(() => {
+    if (!previewOpen) return
+    const timer = setTimeout(() => {
+      previewFrameRef.current?.refresh(invoiceHtml)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [invoiceHtml, previewOpen])
 
   // ---- Actions ----
   const handleNewInvoice = () => {
@@ -166,25 +184,29 @@ export default function App() {
     })
   }
 
-  const handlePrint = () => window.print()
-
-  const handleDownloadPdf = () => {
-    downloadInvoicePdf(sheetRef.current, `${meta.invoiceNumber || 'invoice'}.pdf`)
+  const handlePrint = async () => {
+    await previewFrameRef.current?.refresh(invoiceHtml)
+    previewFrameRef.current?.print()
   }
 
-  const handleSendEmail = ({ to, cc, bcc, subject, body }) => {
+  const handleDownloadPdf = async () => {
+    await previewFrameRef.current?.refresh(invoiceHtml)
+    const target = previewFrameRef.current?.getCaptureTarget()
+    return downloadInvoicePdf(target, `${meta.invoiceNumber || 'invoice'}.pdf`)
+  }
+
+  const handleSendEmail = async ({ to, cc, bcc, subject, body }) => {
     // Kick off the PDF download first so it's ready for the user to attach,
     // then hand off to their default mail client with everything prefilled.
-    downloadInvoicePdf(sheetRef.current, `${meta.invoiceNumber || 'invoice'}.pdf`).finally(() => {
-      const params = new URLSearchParams()
-      if (cc) params.set('cc', cc)
-      if (bcc) params.set('bcc', bcc)
-      if (subject) params.set('subject', subject)
-      if (body) params.set('body', body)
-      const mailto = `mailto:${encodeURIComponent(to)}?${params.toString()}`
-      window.location.href = mailto
-      setEmailModalOpen(false)
-    })
+    await handleDownloadPdf()
+    const params = new URLSearchParams()
+    if (cc) params.set('cc', cc)
+    if (bcc) params.set('bcc', bcc)
+    if (subject) params.set('subject', subject)
+    if (body) params.set('body', body)
+    const mailto = `mailto:${encodeURIComponent(to)}?${params.toString()}`
+    window.location.href = mailto
+    setEmailModalOpen(false)
   }
 
   const handleAddAddress = (entry) => setAddressBook((prev) => [...prev, entry])
@@ -214,7 +236,7 @@ export default function App() {
       />
 
       <div className="app-body">
-        <main className="sheet" ref={sheetRef}>
+        <main className="sheet">
           <InvoiceMeta meta={meta} onChange={setMeta} />
 
           <section className="parties">
@@ -266,17 +288,7 @@ export default function App() {
           </section>
         </main>
 
-        <PreviewPane
-          open={previewOpen}
-          biller={biller}
-          client={client}
-          meta={meta}
-          items={items}
-          notes={notes}
-          totals={totals}
-          bank={bank}
-          signature={signature}
-        />
+        <PreviewPane ref={previewFrameRef} open={previewOpen} />
       </div>
 
       <EmailModal

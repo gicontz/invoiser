@@ -26,6 +26,11 @@ export default function DesignMarketplace({ open, onClose, selectedDesignId, onS
                   className={`design-card${isSelected ? ' selected' : ''}${isLocked ? ' locked' : ''}`}
                 >
                   {isLocked && <span className="design-badge">Coming soon</span>}
+                  <div className="design-swatches">
+                    {design.swatches.map((hex) => (
+                      <span key={hex} className="design-swatch" style={{ background: hex }} />
+                    ))}
+                  </div>
                   <h4>{design.name}</h4>
                   <p>{design.description}</p>
                   {isLocked ? (
