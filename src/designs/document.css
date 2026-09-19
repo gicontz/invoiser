@@ -11,6 +11,16 @@
   --doc-radius: 10px;
 }
 
+/* Explicit, consistent print margins — without this the browser falls back
+   to its own default (varies by browser/OS), which also fights Flat's
+   full-bleed header band (it assumes a controlled outer margin, not a
+   card floating inside an unpredictable one). PDF export has its own,
+   separate margin — see PAGE_MARGIN_MM in utils/pdf.js. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -221,10 +231,6 @@ body {
 }
 
 /* ---------- Order Details (second page, Separate Items only) ---------- */
-.order-details {
-  padding-top: 4px;
-}
-
 .order-details-header {
   display: flex;
   justify-content: space-between;
@@ -266,9 +272,26 @@ body {
   white-space: nowrap;
 }
 
+/* On screen, show where the next .doc-page (e.g. Order Details) will
+   start printing as its own physical page — a real break-before only
+   takes visual effect once actually paginating (print/PDF), so without
+   this the preview would just show one continuous scroll with no hint
+   that a page boundary exists. */
+.doc-page + .doc-page {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 2px dashed var(--doc-line);
+}
+
 @media print {
   body { padding: 0; background: #fff; }
   .preview-sheet { box-shadow: none; max-width: 100%; margin: 0; }
+  /* The real page break replaces the on-screen divider above. */
+  .doc-page + .doc-page {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
   /* The Order Details page is a real second physical page when printing —
      PDF export instead captures each .doc-page as its own image (see
      utils/pdf.js), so this rule only matters for native browser print. */
