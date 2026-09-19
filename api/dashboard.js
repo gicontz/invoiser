@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       id: inv.id,
       invoiceNumber: inv.invoiceNumber,
       clientId: inv.clientId,
+      clientName: inv.client?.name || null,
       status: isOverdue(inv) ? 'overdue' : inv.status,
       total: inv.total,
     }))
