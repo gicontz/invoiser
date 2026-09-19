@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AsyncButton from './AsyncButton.jsx'
 
 const emptyClient = { name: '', address: '', email: '', phone: '' }
 
@@ -29,13 +30,13 @@ export default function ClientFormModal({ initial, onClose, onSubmit }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button
+          <AsyncButton
             className="btn btn-primary"
             onClick={() => onSubmit(client)}
             disabled={!client.name.trim()}
           >
             {initial ? 'Save changes' : 'Add client'}
-          </button>
+          </AsyncButton>
         </div>
       </div>
     </div>

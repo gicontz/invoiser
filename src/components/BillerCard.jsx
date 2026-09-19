@@ -1,3 +1,5 @@
+import AsyncButton from './AsyncButton.jsx'
+
 export default function BillerCard({ biller, onChange, onSaveDefault }) {
   const update = (field) => (e) => onChange({ ...biller, [field]: e.target.value })
 
@@ -5,7 +7,7 @@ export default function BillerCard({ biller, onChange, onSaveDefault }) {
     <div className="party card">
       <div className="party-header">
         <h2>From (Biller)</h2>
-        <button className="btn btn-tiny no-print" onClick={onSaveDefault}>Save as default</button>
+        <AsyncButton className="btn btn-tiny no-print" onClick={onSaveDefault}>Save as default</AsyncButton>
       </div>
       <input
         type="text"

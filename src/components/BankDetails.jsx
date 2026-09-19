@@ -1,3 +1,5 @@
+import AsyncButton from './AsyncButton.jsx'
+
 export default function BankDetails({ bank, onChange, onSaveDefault }) {
   const update = (field) => (e) => onChange({ ...bank, [field]: e.target.value })
 
@@ -5,7 +7,7 @@ export default function BankDetails({ bank, onChange, onSaveDefault }) {
     <div className="card bank-details">
       <div className="party-header">
         <h2>Bank Details</h2>
-        <button className="btn btn-tiny no-print" onClick={onSaveDefault}>Save as default</button>
+        <AsyncButton className="btn btn-tiny no-print" onClick={onSaveDefault}>Save as default</AsyncButton>
       </div>
       <div className="bank-grid">
         <input type="text" placeholder="Account holder name" value={bank.holder} onChange={update('holder')} />

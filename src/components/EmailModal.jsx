@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import AsyncButton from './AsyncButton.jsx'
 
 export default function EmailModal({ open, onClose, addressBook, defaultSubject, defaultBody, onSend }) {
   const [to, setTo] = useState('')
@@ -18,9 +19,7 @@ export default function EmailModal({ open, onClose, addressBook, defaultSubject,
 
   if (!open) return null
 
-  const handleSend = () => {
-    onSend({ to, cc, bcc, subject, body })
-  }
+  const handleSend = () => onSend({ to, cc, bcc, subject, body })
 
   return (
     <div className="modal-backdrop open no-print">
@@ -79,7 +78,7 @@ export default function EmailModal({ open, onClose, addressBook, defaultSubject,
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSend}>Download PDF &amp; Open Email</button>
+          <AsyncButton className="btn btn-primary" onClick={handleSend}>Download PDF &amp; Open Email</AsyncButton>
         </div>
       </div>
     </div>

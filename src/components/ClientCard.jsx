@@ -1,3 +1,5 @@
+import AsyncButton from './AsyncButton.jsx'
+
 export default function ClientCard({ client, clients, onChange, onLoadClient, onSaveClient }) {
   const update = (field) => (e) => onChange({ ...client, [field]: e.target.value })
 
@@ -18,7 +20,7 @@ export default function ClientCard({ client, clients, onChange, onLoadClient, on
               <option key={c.id} value={c.id}>{c.name || 'Untitled client'}</option>
             ))}
           </select>
-          <button className="btn btn-tiny" onClick={onSaveClient}>Save client</button>
+          <AsyncButton className="btn btn-tiny" onClick={onSaveClient}>Save client</AsyncButton>
         </div>
       </div>
       <input

@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState.jsx'
 import ErrorCard from '../components/ErrorCard.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import RecordPaymentModal from '../components/RecordPaymentModal.jsx'
+import AsyncButton from '../components/AsyncButton.jsx'
 
 export default function InvoicesListPage() {
   const navigate = useNavigate()
@@ -67,7 +68,7 @@ export default function InvoicesListPage() {
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">Invoices</h1>
-        <button type="button" className="btn btn-primary" onClick={handleNewInvoice}>+ New Invoice</button>
+        <AsyncButton className="btn btn-primary" onClick={handleNewInvoice}>+ New Invoice</AsyncButton>
       </div>
 
       {state.status === 'loading' && <Skeleton rows={6} />}
@@ -96,16 +97,16 @@ export default function InvoicesListPage() {
                 <span className="amt">{formatMoney(inv.total, inv.currency)}</span>
                 <span style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                   {inv.status === 'draft' && (
-                    <button type="button" className="btn-tiny" onClick={() => handleMarkSent(inv.id)}>Mark Sent</button>
+                    <AsyncButton className="btn-tiny" onClick={() => handleMarkSent(inv.id)}>Mark Sent</AsyncButton>
                   )}
                   {inv.status === 'sent' && (
                     <>
                       <button type="button" className="btn-tiny" onClick={() => setPaymentTarget(inv)}>Record Payment</button>
-                      <button type="button" className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</button>
+                      <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
                     </>
                   )}
                   {inv.status === 'draft' && (
-                    <button type="button" className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</button>
+                    <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
                   )}
                 </span>
               </div>

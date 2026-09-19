@@ -5,6 +5,7 @@ import EmptyState from '../components/EmptyState.jsx'
 import ErrorCard from '../components/ErrorCard.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import ClientFormModal from '../components/ClientFormModal.jsx'
+import AsyncButton from '../components/AsyncButton.jsx'
 
 export default function ClientsPage() {
   const [state, setState] = useState({ status: 'loading', clients: [], error: null })
@@ -80,7 +81,7 @@ export default function ClientsPage() {
               </div>
               <div className="entity-actions">
                 <button type="button" className="btn-tiny" onClick={() => setModal(client)}>Edit</button>
-                <button type="button" className="btn-tiny" onClick={() => handleDelete(client)}>Delete</button>
+                <AsyncButton className="btn-tiny" onClick={() => handleDelete(client)}>Delete</AsyncButton>
               </div>
             </div>
           ))}
