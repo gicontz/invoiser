@@ -3,6 +3,12 @@ import { formatMoney } from '../utils/calc.js'
 
 const GROUP_OPTIONS_ID = 'item-group-options'
 
+// Past this length a description reliably wraps to 2+ lines in the compact
+// (non-Separate-Items) table, which isn't designed for it — a soft warning
+// rather than a hard cap or silent truncation, since truncating text on the
+// actual invoice a client receives would hide real billing information.
+const LONG_DESCRIPTION_WARNING_LENGTH = 70
+
 export default function ItemsTable({ items, currency, onChange, separateItems, onToggleSeparateItems }) {
   const updateItem = (id, field) => (e) => {
     const value = e.target.value
@@ -74,6 +80,12 @@ export default function ItemsTable({ items, currency, onChange, separateItems, o
                   value={item.description}
                   onChange={updateItem(item.id, 'description')}
                 />
+                {!separateItems && item.description?.length > LONG_DESCRIPTION_WARNING_LENGTH && (
+                  <p className="field-hint no-print">
+                    Getting long for this compact view — turn on Separate Items to give it its own
+                    line in Order Details instead.
+                  </p>
+                )}
               </td>
               <td>
                 <input

@@ -28,7 +28,11 @@ export default async function handler(req, res) {
   const totals = computeTotals(invoice.items, invoice.taxPercent, invoice.discountAmount, invoice.capAmount)
   const invoiceData = {
     biller,
-    client: invoice.client,
+    // A fresh invoice's client/bank are null until the editor's ClientCard/
+    // BankDetails actually set them — renderInvoiceBody accesses their
+    // fields unconditionally (e.g. client.name), so a bare null here
+    // crashes PDF generation entirely for any never-edited draft.
+    client: invoice.client || { name: '', address: '', email: '', phone: '' },
     meta: {
       invoiceNumber: invoice.invoiceNumber,
       invoiceDate: invoice.invoiceDate,
@@ -38,7 +42,7 @@ export default async function handler(req, res) {
     items: invoice.items,
     notes: invoice.notes,
     totals,
-    bank: invoice.bank,
+    bank: invoice.bank || { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '' },
     signature: invoice.signature,
     signatoryName: invoice.sameAsBusiness ? biller.name : invoice.signatoryName,
     separateItems: invoice.separateItems,

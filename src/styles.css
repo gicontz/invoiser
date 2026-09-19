@@ -362,6 +362,13 @@ input, textarea, select {
   color: var(--ink-soft);
 }
 
+.field-hint {
+  margin: 4px 0 0;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
 .items table {
   width: 100%;
   border-collapse: collapse;
