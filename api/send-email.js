@@ -3,23 +3,19 @@ import { readUserData } from './_lib/storage.js'
 import { renderInvoicePdfBuffer } from './_lib/renderInvoicePdf.js'
 import { computeTotals } from '../src/utils/calc.js'
 
-// Local-dev-only Gmail sending path (issue #27) — env vars, not per-instance
-// Settings, since this is scaffolding to prove out the PDF-attach-send
-// pipeline before #30 (Resend, the real production path) has a verified
-// sending domain. Not meant to be a long-lived feature.
+// Gmail sending path (issue #27) — env vars, not per-instance Settings.
+// Temporarily enabled in this production deployment too: this is currently
+// personal use (a single instance, run by the maintainer), not a public
+// self-hosted release yet, so there's no other deployment this could affect.
+// Once the app goes public, this reverts to local-dev-only (or is replaced
+// outright) and #30 (Resend, with a verified sending domain) becomes the
+// real production path.
 export const config = { maxDuration: 30 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  // Hard block in production regardless of whether the env vars happen to be
-  // set — this path is local-dev scaffolding only (issue #27), never a
-  // feature a real deployment should be able to reach.
-  if (process.env.VERCEL_ENV === 'production') {
-    return res.status(501).json({ error: 'Email sending is not configured on this instance' })
   }
 
   const { GOOGLE_APP_USERNAME, GOOGLE_APP_PASSWORD } = process.env
