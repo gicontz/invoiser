@@ -18,6 +18,7 @@ import AddressBookModal from './components/AddressBookModal.jsx'
 import DesignMarketplace from './components/DesignMarketplace.jsx'
 import PreviewPane from './components/PreviewPane.jsx'
 import { DEFAULT_DESIGN_ID, renderInvoiceHtml } from './designs/index.js'
+import { formatDate } from './designs/templates.js'
 
 const emptyClient = { name: '', address: '', email: '', phone: '' }
 const emptyBank = { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '' }
@@ -296,7 +297,7 @@ export default function App() {
   const defaultBody =
     `Hi ${client.name || 'there'},\n\n` +
     `Please find attached invoice ${meta.invoiceNumber} for ${meta.currency} ${totals.billed.toFixed(2)}, ` +
-    `due ${meta.dueDate || 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
+    `due ${meta.dueDate ? formatDate(meta.dueDate) : 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
 
   return (
     <>

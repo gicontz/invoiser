@@ -25,11 +25,36 @@ function pageNumberHtml(pageNumber, totalPages) {
   return `<div class="doc-page-number">Page ${pageNumber} of ${totalPages}</div>`
 }
 
+function hoursOf(items) {
+  return items
+    .filter((item) => item.unit === 'per hour')
+    .reduce((sum, item) => sum + (parseFloat(item.qty) || 0), 0)
+}
+
+function formatHours(value) {
+  if (!Number.isFinite(value) || value === 0) return '0'
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// meta.invoiceDate/dueDate are plain YYYY-MM-DD strings from <input
+// type="date">. Parsed manually (not via `new Date(iso)`) to sidestep the
+// classic UTC-parse/local-format timezone shift that can display the
+// wrong day.
+export function formatDate(iso) {
+  if (!iso) return ''
+  const [year, month, day] = iso.split('-').map(Number)
+  if (!year || !month || !day) return iso
+  return `${MONTHS[month - 1]} ${String(day).padStart(2, '0')}, ${year}`
+}
+
 // Groups items by their `group` field (falling back to the item's own
 // description, then a generic label, so nothing is silently dropped when a
-// user hasn't assigned a group). Each group's subtotal is the sum of its
-// items' line subtotals — this is what the summary table shows; the
-// per-item breakdown moves to the Order Details page.
+// user hasn't assigned a group). Each group's total is the sum of its
+// items' line subtotals ("subtotal" is reserved for a single line item —
+// see the per-item breakdown on the Order Details page); `hours` sums qty
+// for its per-hour items, since a group can mix billing units.
 function groupItems(items) {
   const map = new Map()
   for (const item of items) {
@@ -39,7 +64,8 @@ function groupItems(items) {
   }
   return [...map.values()].map((group) => ({
     ...group,
-    subtotal: group.items.reduce((sum, item) => sum + lineSubtotal(item), 0),
+    total: group.items.reduce((sum, item) => sum + lineSubtotal(item), 0),
+    hours: hoursOf(group.items),
   }))
 }
 
@@ -73,12 +99,13 @@ function renderGroupSummaryTable(groups, currency) {
       (group) => `
       <tr>
         <td>${escapeHtml(group.name)}</td>
-        <td>${escapeHtml(formatMoney(group.subtotal, currency))}</td>
+        <td>${escapeHtml(formatHours(group.hours))}</td>
+        <td>${escapeHtml(formatMoney(group.total, currency))}</td>
       </tr>`,
     )
     .join('')
   return `<table class="preview-items preview-items-grouped">
-    <thead><tr><th>Group</th><th>Subtotal</th></tr></thead>
+    <thead><tr><th>Group</th><th>Hours</th><th>Total</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`
 }
@@ -145,6 +172,7 @@ export function renderInvoiceBody({
   const groups = separateItems ? groupItems(items) : null
   const hasPage2 = Boolean(separateItems && groups && groups.length > 0)
   const totalPages = hasPage2 ? 2 : 1
+  const invoiceTotalHours = hoursOf(items)
 
   const cappedRow = totals.capped
     ? `<div><span>Logged total (uncapped)</span><span>${escapeHtml(formatMoney(totals.grandTotal, currency))}</span></div>`
@@ -172,8 +200,8 @@ export function renderInvoiceBody({
       <div class="doc-meta">
         <span class="doc-meta-label">Invoice</span>
         <span class="doc-meta-num">${escapeHtml(meta.invoiceNumber) || '—'}</span>
-        <span class="doc-meta-date">${escapeHtml(meta.invoiceDate) || '—'}</span>
-        ${meta.dueDate ? `<span class="doc-meta-date">Due ${escapeHtml(meta.dueDate)}</span>` : ''}
+        <span class="doc-meta-date">${escapeHtml(formatDate(meta.invoiceDate)) || '—'}</span>
+        ${meta.dueDate ? `<span class="doc-meta-date">Due ${escapeHtml(formatDate(meta.dueDate))}</span>` : ''}
       </div>
     </header>
 
@@ -197,6 +225,7 @@ export function renderInvoiceBody({
 
     <div class="preview-totals">
       <div><span>Subtotal</span><span>${escapeHtml(formatMoney(totals.subtotal, currency))}</span></div>
+      ${invoiceTotalHours > 0 ? `<div><span>Total Hours</span><span>${escapeHtml(formatHours(invoiceTotalHours))}</span></div>` : ''}
       <div><span>Tax</span><span>${escapeHtml(formatMoney(totals.tax, currency))}</span></div>
       <div><span>Discount</span><span>${escapeHtml(formatMoney(totals.discount, currency))}</span></div>
       ${cappedRow}
