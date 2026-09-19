@@ -24,6 +24,9 @@ export default function Toolbar() {
           <NavLink to="/bank-accounts" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Bank Accounts
           </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Settings
+          </NavLink>
         </nav>
       </div>
     </header>
