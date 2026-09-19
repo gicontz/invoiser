@@ -321,6 +321,22 @@ export default function InvoiceEditorPage() {
 
   const handleSendEmail = async ({ to, cc, bcc, subject, body }) => {
     try {
+      const result = await api.sendEmail({ invoiceId, to, cc, bcc, subject, body })
+      if (result?.sent) {
+        enqueueSnackbar('Email sent', { variant: 'success' })
+        setEmailModalOpen(false)
+        return
+      }
+    } catch (error) {
+      // 501 = sending isn't configured on this instance — fall through to
+      // the mailto handoff silently. Any other failure gets a toast, but we
+      // still fall through so the user isn't stuck.
+      if (error.status && error.status !== 501) {
+        enqueueSnackbar(error.message || 'Could not send the email — opening your mail app instead', { variant: 'error' })
+      }
+    }
+
+    try {
       await handleDownloadPdf()
     } catch {
       return
