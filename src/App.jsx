@@ -13,6 +13,9 @@ import BankDetails from './components/BankDetails.jsx'
 import SignatureUpload from './components/SignatureUpload.jsx'
 import EmailModal from './components/EmailModal.jsx'
 import AddressBookModal from './components/AddressBookModal.jsx'
+import DesignMarketplace from './components/DesignMarketplace.jsx'
+import PreviewPane from './components/PreviewPane.jsx'
+import { DEFAULT_DESIGN_ID } from './designs/index.js'
 
 const emptyClient = { name: '', address: '', email: '', phone: '' }
 const emptyBank = { holder: '', bankName: '', bankAddress: '', accountNumber: '', swift: '' }
@@ -33,6 +36,11 @@ export default function App() {
   const [clients, setClients] = useLocalStorage('invoiser_clients', [])
   const [addressBook, setAddressBook] = useLocalStorage('invoiser_address_book', [])
   const [invoiceCounter, setInvoiceCounter] = useLocalStorage('invoiser_invoice_counter', 1)
+  // Which output design (print/PDF/email) is selected. Only 'default' is
+  // actually implemented right now — this is plumbing for the design
+  // marketplace future themes will plug into.
+  const [selectedDesignId, setSelectedDesignId] = useLocalStorage('invoiser_selected_design', DEFAULT_DESIGN_ID)
+  const [previewOpen, setPreviewOpen] = useLocalStorage('invoiser_preview_open', false)
 
   // ---- Current invoice state ----
   const [biller, setBiller] = useState(billerDefault)
@@ -52,6 +60,7 @@ export default function App() {
 
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [addressBookOpen, setAddressBookOpen] = useState(false)
+  const [designsOpen, setDesignsOpen] = useState(false)
 
   const totals = useMemo(
     () => computeTotals(items, taxPercent, discountAmount),
@@ -129,62 +138,79 @@ export default function App() {
     `due ${meta.dueDate || 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
 
   return (
-    <div className="app">
+    <div className={`app${previewOpen ? ' preview-open' : ''}`}>
       <Toolbar
         onNew={handleNewInvoice}
         onOpenAddressBook={() => setAddressBookOpen(true)}
         onPrint={handlePrint}
         onDownloadPdf={handleDownloadPdf}
         onOpenEmail={() => setEmailModalOpen(true)}
+        onOpenDesigns={() => setDesignsOpen(true)}
+        previewOpen={previewOpen}
+        onTogglePreview={() => setPreviewOpen((prev) => !prev)}
       />
 
-      <main className="sheet" ref={sheetRef}>
-        <InvoiceMeta meta={meta} onChange={setMeta} />
+      <div className="app-body">
+        <main className="sheet" ref={sheetRef}>
+          <InvoiceMeta meta={meta} onChange={setMeta} />
 
-        <section className="parties">
-          <BillerCard
-            biller={biller}
-            onChange={setBiller}
-            onSaveDefault={() => setBillerDefault(biller)}
-          />
-          <ClientCard
-            client={client}
-            clients={clients}
-            onChange={setClient}
-            onLoadClient={handleLoadClient}
-            onSaveClient={handleSaveClient}
-          />
-        </section>
+          <section className="parties">
+            <BillerCard
+              biller={biller}
+              onChange={setBiller}
+              onSaveDefault={() => setBillerDefault(biller)}
+            />
+            <ClientCard
+              client={client}
+              clients={clients}
+              onChange={setClient}
+              onLoadClient={handleLoadClient}
+              onSaveClient={handleSaveClient}
+            />
+          </section>
 
-        <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
+          <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
 
-        <div className="card notes">
-          <label htmlFor="notes">Notes / Terms</label>
-          <textarea id="notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+          <div className="card notes">
+            <label htmlFor="notes">Notes / Terms</label>
+            <textarea id="notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
 
-        <div className="card">
-          <Totals
-            subtotal={totals.subtotal}
-            tax={totals.tax}
-            taxPercent={taxPercent}
-            discount={discountAmount}
-            grandTotal={totals.grandTotal}
-            currency={meta.currency}
-            onTaxChange={setTaxPercent}
-            onDiscountChange={setDiscountAmount}
-          />
-        </div>
+          <div className="card">
+            <Totals
+              subtotal={totals.subtotal}
+              tax={totals.tax}
+              taxPercent={taxPercent}
+              discount={discountAmount}
+              grandTotal={totals.grandTotal}
+              currency={meta.currency}
+              onTaxChange={setTaxPercent}
+              onDiscountChange={setDiscountAmount}
+            />
+          </div>
 
-        <section className="foot-grid">
-          <BankDetails bank={bank} onChange={setBank} onSaveDefault={() => setBankDefault(bank)} />
-          <SignatureUpload
-            signature={signature}
-            onChange={setSignature}
-            onSaveDefault={() => setSignatureDefault(signature)}
-          />
-        </section>
-      </main>
+          <section className="foot-grid">
+            <BankDetails bank={bank} onChange={setBank} onSaveDefault={() => setBankDefault(bank)} />
+            <SignatureUpload
+              signature={signature}
+              onChange={setSignature}
+              onSaveDefault={() => setSignatureDefault(signature)}
+            />
+          </section>
+        </main>
+
+        <PreviewPane
+          open={previewOpen}
+          biller={biller}
+          client={client}
+          meta={meta}
+          items={items}
+          notes={notes}
+          totals={totals}
+          bank={bank}
+          signature={signature}
+        />
+      </div>
 
       <EmailModal
         open={emailModalOpen}
@@ -201,6 +227,13 @@ export default function App() {
         addresses={addressBook}
         onAdd={handleAddAddress}
         onRemove={handleRemoveAddress}
+      />
+
+      <DesignMarketplace
+        open={designsOpen}
+        onClose={() => setDesignsOpen(false)}
+        selectedDesignId={selectedDesignId}
+        onSelect={setSelectedDesignId}
       />
     </div>
   )
