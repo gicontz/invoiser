@@ -1,4 +1,4 @@
-import { readUserData } from './_lib/storage.js'
+import { readAllInvoices } from './_lib/invoiceStorage.js'
 import { isOverdue } from './_lib/invoiceStatus.js'
 
 export default async function handler(req, res) {
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { data: invoices } = await readUserData('invoices')
+  const invoices = await readAllInvoices()
   const active = invoices.filter((inv) => inv.status !== 'cancelled')
 
   const totalInvoiced = active.reduce((sum, inv) => sum + (inv.total || 0), 0)

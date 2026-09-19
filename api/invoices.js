@@ -1,10 +1,11 @@
-import { readUserData, updateUserData, respondToStorageError } from './_lib/storage.js'
+import { readAllInvoices, createInvoice } from './_lib/invoiceStorage.js'
+import { respondToStorageError } from './_lib/storage.js'
 import { isOverdue } from './_lib/invoiceStatus.js'
 import { computeTotals } from '../src/utils/calc.js'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const { data: invoices } = await readUserData('invoices')
+    const invoices = await readAllInvoices()
     const { status } = req.query
     const withComputed = invoices.map((inv) => ({
       ...inv,
@@ -21,8 +22,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { invoice } = await updateUserData('invoices', (invoices) => {
-        const now = new Date().toISOString()
+      const now = new Date().toISOString()
+      const invoiceDate = req.body?.invoiceDate || now.slice(0, 10)
+      const invoice = await createInvoice(invoiceDate, (yearInvoices, year) => {
         const items = req.body?.items || []
         const totals = computeTotals(
           items,
@@ -30,8 +32,8 @@ export default async function handler(req, res) {
           req.body?.discountAmount || 0,
           req.body?.capAmount || '',
         )
-        const invoiceNumber = req.body?.invoiceNumber || `INV-${String(invoices.length + 1).padStart(4, '0')}`
-        const newInvoice = {
+        const invoiceNumber = req.body?.invoiceNumber || `INV-${year}-${String(yearInvoices.length + 1).padStart(4, '0')}`
+        return {
           id: crypto.randomUUID(),
           invoiceNumber,
           clientId: req.body?.clientId || null,
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
           bankAccountId: req.body?.bankAccountId || null,
           bank: req.body?.bank || null,
           status: 'draft',
-          invoiceDate: req.body?.invoiceDate || now.slice(0, 10),
+          invoiceDate,
           dueDate: req.body?.dueDate || '',
           currency: req.body?.currency || 'PHP',
           items,
@@ -62,7 +64,6 @@ export default async function handler(req, res) {
           sentAt: null,
           cancelledAt: null,
         }
-        return { data: [...invoices, newInvoice], invoice: newInvoice }
       })
       return res.status(201).json(invoice)
     } catch (error) {
