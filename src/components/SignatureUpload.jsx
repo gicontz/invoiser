@@ -12,7 +12,16 @@ function readFileAsDataUrl(file) {
   })
 }
 
-export default function SignatureUpload({ signature, onChange, onSaveDefault }) {
+export default function SignatureUpload({
+  signature,
+  onChange,
+  onSaveDefault,
+  billerName,
+  sameAsBusiness,
+  onSameAsBusinessChange,
+  signatoryName,
+  onSignatoryNameChange,
+}) {
   const inputRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState('')
@@ -92,6 +101,29 @@ export default function SignatureUpload({ signature, onChange, onSaveDefault }) 
         )}
       </div>
       {error && <p className="signature-error no-print">{error}</p>}
+
+      <label className="checkbox-label signatory-checkbox no-print">
+        <input
+          type="checkbox"
+          checked={sameAsBusiness}
+          onChange={(e) => onSameAsBusinessChange(e.target.checked)}
+        />
+        Same as business name (sole proprietorship)
+      </label>
+
+      {sameAsBusiness ? (
+        <p className="signatory-preview no-print">
+          Signed as: <strong>{billerName || '—'}</strong>
+        </p>
+      ) : (
+        <input
+          type="text"
+          className="signatory-name-input no-print"
+          placeholder="Signatory's full name"
+          value={signatoryName}
+          onChange={(e) => onSignatoryNameChange(e.target.value)}
+        />
+      )}
     </div>
   )
 }

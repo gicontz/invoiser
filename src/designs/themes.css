@@ -180,7 +180,6 @@
      its own 32px inset via margin instead. */
   padding: 0 0 32px;
   font-family: "IBM Plex Sans", sans-serif;
-  overflow: hidden;
 }
 
 [data-design="flat"] .doc-head {
@@ -227,14 +226,18 @@
   margin-right: 32px;
 }
 
-[data-design="flat"] .preview-bank {
+[data-design="flat"] .doc-footer {
   margin-left: 32px;
   margin-right: 32px;
 }
 
-[data-design="flat"] .preview-signature {
-  margin-left: 32px;
-  margin-right: 32px;
+[data-design="flat"] .order-details {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+[data-design="flat"] .order-detail-name {
+  font-family: "Space Grotesk", sans-serif;
 }
 
 [data-design="flat"] .preview-party h2,

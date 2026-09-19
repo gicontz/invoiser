@@ -69,6 +69,9 @@ export default function App() {
   // Which output design (print/PDF/email) is selected — see designs/index.js.
   const [selectedDesignId, setSelectedDesignId] = useLocalStorage('invoiser_selected_design', DEFAULT_DESIGN_ID)
   const [previewOpen, setPreviewOpen] = useLocalStorage('invoiser_preview_open', false)
+  // Display preference, not invoice data — persists across invoices like
+  // previewOpen. See designs/templates.js for what it changes in the output.
+  const [separateItems, setSeparateItems] = useLocalStorage('invoiser_separate_items', false)
 
   // ---- Current invoice state (restored from a saved draft, if any) ----
   const [biller, setBiller] = useState(initialDraft?.biller ?? billerDefault)
@@ -88,6 +91,8 @@ export default function App() {
   const [notes, setNotes] = useState(initialDraft?.notes ?? 'Payment due within 7 days of invoice date.')
   const [bank, setBank] = useState(initialDraft?.bank ?? bankDefault)
   const [signature, setSignature] = useState(initialDraft?.signature ?? signatureDefault)
+  const [sameAsBusiness, setSameAsBusiness] = useState(initialDraft?.sameAsBusiness ?? true)
+  const [signatoryName, setSignatoryName] = useState(initialDraft?.signatoryName ?? '')
 
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [addressBookOpen, setAddressBookOpen] = useState(false)
@@ -98,14 +103,30 @@ export default function App() {
     [items, taxPercent, discountAmount, capAmount],
   )
 
+  // Sole proprietors sign with their own business name — no need to retype
+  // it as a separate signatory. Only ask for a distinct name when unchecked.
+  const resolvedSignatoryName = sameAsBusiness ? biller.name : signatoryName
+
   // The full HTML document for the invoice in the selected design — the
   // single source of truth for the preview iframe, Print, and PDF/email
   // export. Recomputing this is cheap (string building); what's expensive
   // is reloading the iframe, which is why refreshing it (below) is
   // debounced instead of happening on every keystroke.
   const invoiceHtml = useMemo(
-    () => renderInvoiceHtml(selectedDesignId, { biller, client, meta, items, notes, totals, bank, signature }),
-    [selectedDesignId, biller, client, meta, items, notes, totals, bank, signature],
+    () =>
+      renderInvoiceHtml(selectedDesignId, {
+        biller,
+        client,
+        meta,
+        items,
+        notes,
+        totals,
+        bank,
+        signature,
+        signatoryName: resolvedSignatoryName,
+        separateItems,
+      }),
+    [selectedDesignId, biller, client, meta, items, notes, totals, bank, signature, resolvedSignatoryName, separateItems],
   )
 
   // Keep the on-screen preview roughly live while it's open, without
@@ -137,6 +158,8 @@ export default function App() {
     setNotes('Payment due within 7 days of invoice date.')
     setBank(bankDefault)
     setSignature(signatureDefault)
+    setSameAsBusiness(true)
+    setSignatoryName('')
     try {
       window.localStorage.removeItem(DRAFT_KEY)
     } catch {
@@ -146,7 +169,10 @@ export default function App() {
   }
 
   const handleSaveDraft = () => {
-    const draft = { biller, client, meta, items, taxPercent, discountAmount, capAmount, notes, bank, signature }
+    const draft = {
+      biller, client, meta, items, taxPercent, discountAmount, capAmount, notes, bank, signature,
+      sameAsBusiness, signatoryName,
+    }
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
       setDraftStatus('Draft saved')
@@ -202,9 +228,9 @@ export default function App() {
 
   const handleDownloadPdf = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
-    const target = previewFrameRef.current?.getCaptureTarget()
+    const pages = previewFrameRef.current?.getCapturePages()
     try {
-      await downloadInvoicePdf(target, `${meta.invoiceNumber || 'invoice'}.pdf`)
+      await downloadInvoicePdf(pages, `${meta.invoiceNumber || 'invoice'}.pdf`)
       enqueueSnackbar('PDF downloaded', { variant: 'success' })
     } catch {
       enqueueSnackbar('Could not generate the PDF', { variant: 'error' })
@@ -309,7 +335,13 @@ export default function App() {
               />
             </section>
 
-            <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
+            <ItemsTable
+              items={items}
+              currency={meta.currency}
+              onChange={setItems}
+              separateItems={separateItems}
+              onToggleSeparateItems={setSeparateItems}
+            />
 
             <div className="card notes">
               <label htmlFor="notes">Notes / Terms</label>
@@ -339,6 +371,11 @@ export default function App() {
                 signature={signature}
                 onChange={setSignature}
                 onSaveDefault={handleSaveSignatureDefault}
+                billerName={biller.name}
+                sameAsBusiness={sameAsBusiness}
+                onSameAsBusinessChange={setSameAsBusiness}
+                signatoryName={signatoryName}
+                onSignatoryNameChange={setSignatoryName}
               />
             </section>
           </main>

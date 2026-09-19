@@ -29,6 +29,7 @@ export function formatMoney(amount, currency) {
 export function makeEmptyItem() {
   return {
     id: crypto.randomUUID(),
+    group: '',
     description: '',
     qty: 1,
     unit: 'per hour',
