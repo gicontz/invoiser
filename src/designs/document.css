@@ -48,6 +48,13 @@ body {
   border-radius: var(--doc-radius);
   padding: 32px;
   box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
+  /* A4's own ratio (210:297) — a short invoice still fills a full page
+     instead of leaving dead space below it; a page whose content is
+     taller than that (many items, a long Order Details page) simply
+     grows past it rather than getting clipped. */
+  aspect-ratio: 210 / 297;
+  display: flex;
+  flex-direction: column;
 }
 
 .doc-head {
@@ -194,7 +201,11 @@ body {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 16px;
-  margin-top: 8px;
+  /* .doc-page is a column flexbox (see above) — auto absorbs all the
+     leftover space above this last child, anchoring the footer to the
+     bottom of the page instead of leaving dead space below it. */
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 .doc-footer-signature {
