@@ -1,13 +1,43 @@
+/* Design tokens — see DESIGN.md ("Ledgerline"). This governs the app's own
+ * UI (toolbar, nav, forms, modals) — never the invoice *output*, which has
+ * its own separate theme system in src/designs/.
+ */
 :root {
-  --ink: #1a1d23;
-  --ink-soft: #5b6270;
-  --line: #e2e5ea;
-  --paper: #ffffff;
-  --bg: #f4f5f7;
-  --accent: #2f6fed;
+  --cream: #fff8f0;
+  --white: #ffffff;
+  --lilac: #e7e3fa;
+  --ink: #26263a;
+  --ink-soft: #63607a;
+
+  --accent: #1f3a5f;
   --accent-ink: #ffffff;
-  --danger: #d64545;
-  --radius: 10px;
+
+  --draft-fill: #e9e7f2;   --draft-deep: #6b6480;
+  --sent-fill: #dceaf6;    --sent-deep: #2c5d82;
+  --paid-fill: #dff3e6;    --paid-deep: #1f6e52;
+  --overdue-fill: #fbe1dd; --overdue-deep: #a8261e;
+  --cancelled-fill: #ecebee; --cancelled-deep: #86808f;
+
+  --danger: #a8261e;
+  --danger-bg: #ffe3e0;
+
+  /* Kept for now: a handful of components (design marketplace cards,
+     preview-pane iframe frame) still reference a plain neutral line/bg
+     pair rather than a pastel-status role — these are not "wrong" per
+     DESIGN.md, just neutral UI chrome. */
+  --line: #e6e1d6;
+  --bg: var(--cream);
+  --paper: var(--white);
+
+  --radius: 24px;
+  --radius-field: 18px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 8px 20px rgba(31, 58, 95, 0.1);
+
+  --font-display: "Fredoka", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
   font-size: 15px;
 }
 
@@ -15,7 +45,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
   background: var(--bg);
 }
@@ -42,8 +72,8 @@ input, textarea, select {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--paper);
-  border-bottom: 1px solid var(--line);
+  background: var(--white);
+  border-bottom: 1px solid rgba(38, 38, 58, 0.08);
 }
 
 .toolbar-inner {
@@ -58,7 +88,8 @@ input, textarea, select {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 1.1rem;
 }
 
@@ -69,42 +100,94 @@ input, textarea, select {
   flex-wrap: wrap;
 }
 
+.toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+}
+
+.nav-link:hover { color: var(--ink); }
+
+.nav-link.active {
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
 .draft-status {
   font-size: 0.82rem;
   color: var(--ink-soft);
 }
 
+/* ---------- Invoice editor's own action bar (per-invoice, not global nav) ---------- */
+.editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--white);
+  border-bottom: 1px solid rgba(38, 38, 58, 0.08);
+  padding: 12px 24px;
+}
+
+.editor-toolbar .save-status {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  flex: 1;
+}
+
+.editor-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .btn {
   border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 800;
   cursor: pointer;
   background: none;
 }
 
 .btn-primary { background: var(--accent); color: var(--accent-ink); }
-.btn-primary:hover { background: #2559c7; }
+.btn-primary:hover { background: #16304f; }
 
-.btn-secondary { background: var(--paper); border-color: var(--line); color: var(--ink); }
-.btn-secondary:hover { border-color: #c7ccd6; }
+.btn-secondary { background: var(--white); border-color: rgba(38, 38, 58, 0.14); color: var(--ink); }
+.btn-secondary:hover { border-color: rgba(38, 38, 58, 0.28); }
 
 .btn-ghost { background: transparent; color: var(--ink-soft); }
 .btn-ghost:hover { color: var(--ink); }
 
 .btn-tiny {
-  font-size: 0.78rem;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--cream);
+  border: 1px solid rgba(38, 38, 58, 0.1);
   color: var(--ink-soft);
   cursor: pointer;
 }
-.btn-tiny:hover { color: var(--ink); border-color: #c7ccd6; }
+.btn-tiny:hover { color: var(--ink); border-color: rgba(38, 38, 58, 0.22); }
 
-.btn-ghost.btn-active { background: var(--bg); color: var(--ink); }
+.btn-ghost.btn-active { background: var(--accent); color: var(--accent-ink); }
 
 /* ---------- Layout ---------- */
 .app {
@@ -128,25 +211,26 @@ input, textarea, select {
 }
 
 .sheet {
-  background: var(--paper);
+  background: var(--white);
   margin: 24px auto 80px;
   padding: 40px;
   border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
+  box-shadow: var(--shadow-soft);
 }
 
 .card {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(38, 38, 58, 0.08);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
   margin-bottom: 20px;
 }
 
 /* ---------- Invoice head ---------- */
 .invoice-title {
   margin: 0 0 16px;
-  font-size: 1.8rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.7rem;
 }
 
 .field-row {
@@ -160,14 +244,15 @@ input, textarea, select {
   width: 100px;
   flex-shrink: 0;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 
 .field-row input {
   flex: 1;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 6px 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 7px 10px;
 }
 
 /* ---------- Parties ---------- */
@@ -188,9 +273,9 @@ input, textarea, select {
 
 .party-header h2 {
   margin: 0;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 800;
   color: var(--ink-soft);
 }
 
@@ -201,18 +286,18 @@ input, textarea, select {
 }
 
 .party-header-actions select {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 4px 6px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 4px 8px;
   font-size: 0.8rem;
 }
 
 .party input, .party textarea,
 .bank-details input {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 9px 10px;
   margin-bottom: 8px;
   resize: vertical;
 }
@@ -239,10 +324,9 @@ input, textarea, select {
 .items thead th {
   text-align: left;
   font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 800;
   color: var(--ink-soft);
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid rgba(38, 38, 58, 0.1);
   padding: 8px 6px;
 }
 
@@ -252,7 +336,7 @@ input, textarea, select {
 
 .items tbody td {
   padding: 6px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(38, 38, 58, 0.08);
   vertical-align: top;
 }
 
@@ -261,17 +345,18 @@ input, textarea, select {
   border: 1px solid transparent;
   background: transparent;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-field);
 }
 
 .items tbody input:focus, .items tbody select:focus {
-  border-color: var(--line);
-  background: var(--bg);
+  border-color: rgba(38, 38, 58, 0.14);
+  background: var(--cream);
   outline: none;
 }
 
 .subtotal-cell {
   text-align: right;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   padding: 6px 10px;
 }
@@ -306,14 +391,16 @@ input, textarea, select {
 .totals-row input {
   width: 90px;
   text-align: right;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 4px 6px;
+  font-family: var(--font-mono);
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 4px 8px;
 }
 
 .totals-row.grand-total {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
   border-top: 2px solid var(--ink);
   padding-top: 8px;
   margin-top: 4px;
@@ -323,15 +410,16 @@ input, textarea, select {
 .notes label {
   display: block;
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--ink-soft);
   margin-bottom: 6px;
 }
 
 .notes textarea {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 9px 10px;
   resize: vertical;
 }
 
@@ -360,13 +448,13 @@ input, textarea, select {
 
 .signature-preview {
   height: 90px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
+  border: 1.5px dashed rgba(38, 38, 58, 0.18);
+  border-radius: var(--radius-field);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--cream);
 }
 
 .signature-preview img {
@@ -385,7 +473,7 @@ input, textarea, select {
 .signature-dragging {
   border-color: var(--accent);
   border-style: solid;
-  background: rgba(47, 111, 237, 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, var(--white));
 }
 
 .signature-error {
@@ -419,16 +507,16 @@ input, textarea, select {
 .signatory-name-input {
   width: 100%;
   margin-top: 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 9px 10px;
 }
 
 /* ---------- Modals ---------- */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 20, 30, 0.45);
+  background: rgba(38, 38, 58, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -437,34 +525,35 @@ input, textarea, select {
 }
 
 .modal {
-  background: var(--paper);
+  background: var(--white);
   border-radius: var(--radius);
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  box-shadow: var(--shadow-soft);
 }
 
 .modal-header, .modal-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
 
-.modal-header { border-bottom: 1px solid var(--line); }
-.modal-footer { border-top: 1px solid var(--line); gap: 8px; }
-.modal-header h3 { margin: 0; font-size: 1rem; }
+.modal-header { border-bottom: 1px solid rgba(38, 38, 58, 0.08); }
+.modal-footer { border-top: 1px solid rgba(38, 38, 58, 0.08); gap: 8px; }
+.modal-header h3 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
 
 .modal-body {
-  padding: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
 .modal-body label {
   font-size: 0.8rem;
+  font-weight: 600;
   color: var(--ink-soft);
   margin: 10px 0 4px;
 }
@@ -472,18 +561,18 @@ input, textarea, select {
 .modal-body label:first-of-type { margin-top: 0; }
 
 .modal-body input, .modal-body textarea {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 9px 10px;
   resize: vertical;
 }
 
 .modal-hint {
   font-size: 0.82rem;
   color: var(--ink-soft);
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 10px 12px;
+  background: var(--cream);
+  border-radius: var(--radius-field);
+  padding: 10px 14px;
   margin: 0 0 4px;
 }
 
@@ -495,9 +584,9 @@ input, textarea, select {
 
 .address-add-row input {
   flex: 1;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-field);
+  padding: 9px 10px;
 }
 
 .address-list {
@@ -513,14 +602,14 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border: 1px solid rgba(38, 38, 58, 0.1);
+  border-radius: var(--radius-field);
+  padding: 9px 12px;
   font-size: 0.88rem;
 }
 
 .address-list .address-meta { display: flex; flex-direction: column; }
-.address-list .address-label { font-weight: 600; }
+.address-list .address-label { font-weight: 700; }
 .address-list .address-email { color: var(--ink-soft); font-size: 0.8rem; }
 
 /* ---------- Design marketplace ---------- */
@@ -539,15 +628,17 @@ input, textarea, select {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(38, 38, 58, 0.1);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
 }
 
 .design-card h4 {
   margin: 0;
   padding-right: 70px;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.98rem;
 }
 
 .design-card p {
@@ -563,11 +654,11 @@ input, textarea, select {
 
 .design-card.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
 }
 
 .design-card.locked {
-  background: var(--bg);
+  background: var(--cream);
   opacity: 0.75;
 }
 
@@ -579,15 +670,13 @@ input, textarea, select {
   position: absolute;
   top: 14px;
   right: 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  border: 1px solid rgba(38, 38, 58, 0.12);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
   color: var(--ink-soft);
-  background: var(--paper);
+  background: var(--white);
 }
 
 .design-swatches {
@@ -622,9 +711,7 @@ input, textarea, select {
 .preview-pane-label {
   margin-bottom: 8px;
   font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 800;
   color: var(--ink-soft);
 }
 
@@ -633,12 +720,229 @@ input, textarea, select {
   border: none;
   display: block;
   border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---------- App shell (Dashboard/Invoices/Clients/Bank Accounts) ---------- */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(38, 38, 58, 0.05);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.stat-value .cur {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-right: 4px;
+}
+
+.status-count-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 2px rgba(38, 38, 58, 0.05);
+}
+
+.status-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.status-count .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-count b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+}
+
+.list-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(38, 38, 58, 0.05);
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: 100px 1.4fr 110px 110px 130px;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(38, 38, 58, 0.07);
+  font-size: 0.88rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.list-row:last-child { border-bottom: none; }
+.list-row.linked:hover { background: var(--cream); }
+
+.list-row .num { font-family: var(--font-mono); color: var(--ink-soft); font-size: 0.78rem; }
+.list-row .primary { font-weight: 700; }
+.list-row .muted { color: var(--ink-soft); font-size: 0.82rem; }
+.list-row .amt { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+}
+
+.status-pill.draft { color: var(--draft-deep); background: var(--draft-fill); }
+.status-pill.sent { color: var(--sent-deep); background: var(--sent-fill); }
+.status-pill.paid { color: var(--paid-deep); background: var(--paid-fill); }
+.status-pill.overdue { color: var(--overdue-deep); background: var(--overdue-fill); }
+.status-pill.cancelled { color: var(--cancelled-deep); background: var(--cancelled-fill); text-decoration: line-through; }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(38, 38, 58, 0.05);
+}
+
+.empty-state p:first-child { font-weight: 700; font-size: 1rem; margin: 0 0 4px; }
+.empty-state p:nth-child(2) { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 16px; }
+
+.skeleton-bar {
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--lilac);
+  margin-bottom: 10px;
+}
+
+.skeleton-row {
+  padding: 15px 20px;
+}
+
+.error-card {
+  background: var(--danger-bg);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.error-card p {
+  margin: 0 0 12px;
+  font-weight: 700;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.btn-retry {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--danger);
+  background: var(--white);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.entity-list { display: flex; flex-direction: column; gap: 10px; }
+
+.entity-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(38, 38, 58, 0.05);
+}
+
+.entity-card .entity-name { font-weight: 700; margin: 0 0 2px; }
+.entity-card .entity-meta { color: var(--ink-soft); font-size: 0.82rem; margin: 0; }
+.entity-card .entity-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.badge-default {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--white));
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  margin-left: 8px;
 }
 
 /* ---------- Print ---------- */
 @media print {
-  body { background: var(--paper); }
+  body { background: var(--white); }
   .no-print { display: none !important; }
   .sheet {
     box-shadow: none;
@@ -665,4 +969,7 @@ input, textarea, select {
   }
 
   .design-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .list-row { grid-template-columns: 1fr; gap: 4px; }
+  .list-row .amt { text-align: left; }
 }

@@ -6,7 +6,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const invoices = await readUserData('invoices')
     const { status } = req.query
-    const withComputed = invoices.map((inv) => ({ ...inv, overdue: isOverdue(inv) }))
+    const withComputed = invoices.map((inv) => ({
+      ...inv,
+      overdue: isOverdue(inv),
+      clientName: inv.client?.name || null,
+    }))
     const result = !status
       ? withComputed
       : status === 'overdue'
@@ -25,11 +29,14 @@ export default async function handler(req, res) {
       req.body?.discountAmount || 0,
       req.body?.capAmount || '',
     )
+    const invoiceNumber = req.body?.invoiceNumber || `INV-${String(invoices.length + 1).padStart(4, '0')}`
     const invoice = {
       id: crypto.randomUUID(),
-      invoiceNumber: req.body?.invoiceNumber || '',
+      invoiceNumber,
       clientId: req.body?.clientId || null,
+      client: req.body?.client || null,
       bankAccountId: req.body?.bankAccountId || null,
+      bank: req.body?.bank || null,
       status: 'draft',
       invoiceDate: req.body?.invoiceDate || now.slice(0, 10),
       dueDate: req.body?.dueDate || '',

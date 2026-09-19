@@ -1,21 +1,9 @@
-import { useRef } from 'react'
+import { NavLink } from 'react-router-dom'
 
-export default function Toolbar({
-  onNew,
-  onOpenAddressBook,
-  onSaveDraft,
-  draftStatus,
-  onExport,
-  onImportFile,
-  onPrint,
-  onDownloadPdf,
-  onOpenEmail,
-  onOpenDesigns,
-  previewOpen,
-  onTogglePreview,
-}) {
-  const importInputRef = useRef(null)
-
+// Global app-wide nav only — invoice-specific actions (New, Print, Download
+// PDF, Email, Designs, Preview) live in the editor page itself now that
+// there are multiple pages (see DESIGN.md §5 on the app shell).
+export default function Toolbar() {
   return (
     <header className="toolbar no-print">
       <div className="toolbar-inner">
@@ -23,39 +11,20 @@ export default function Toolbar({
           <span className="brand-mark">🧾</span>
           <span className="brand-name">Invoiser</span>
         </div>
-        <div className="toolbar-actions">
-          <button className="btn btn-ghost" onClick={onNew}>New</button>
-          <button className="btn btn-ghost" onClick={onOpenAddressBook}>Address Book</button>
-          <button className="btn btn-ghost" onClick={onOpenDesigns}>Designs</button>
-          <button
-            type="button"
-            className={`btn btn-ghost${previewOpen ? ' btn-active' : ''}`}
-            aria-pressed={previewOpen}
-            onClick={onTogglePreview}
-          >
-            {previewOpen ? 'Hide Preview' : 'Preview'}
-          </button>
-          <button className="btn btn-secondary" onClick={onSaveDraft}>Save Draft</button>
-          {draftStatus && <span className="draft-status">{draftStatus}</span>}
-          <button className="btn btn-secondary" onClick={onExport}>Export JSON</button>
-          <button className="btn btn-secondary" onClick={() => importInputRef.current?.click()}>
-            Import JSON
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json"
-            className="visually-hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) onImportFile(file)
-              e.target.value = ''
-            }}
-          />
-          <button className="btn btn-secondary" onClick={onPrint}>Print</button>
-          <button className="btn btn-secondary" onClick={onDownloadPdf}>Download PDF</button>
-          <button className="btn btn-primary" onClick={onOpenEmail}>Email Invoice</button>
-        </div>
+        <nav className="toolbar-nav">
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Dashboard
+          </NavLink>
+          <NavLink to="/invoices" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Invoices
+          </NavLink>
+          <NavLink to="/clients" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Clients
+          </NavLink>
+          <NavLink to="/bank-accounts" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Bank Accounts
+          </NavLink>
+        </nav>
       </div>
     </header>
   )
