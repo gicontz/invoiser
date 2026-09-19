@@ -1,36 +1,93 @@
-export default function SignatureUpload({ signature, onChange, onSaveDefault }) {
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+import { useRef, useState } from 'react'
 
+const ACCEPTED_TYPES = ['image/png', 'image/svg+xml']
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => onChange(reader.result)
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
+  })
+}
+
+export default function SignatureUpload({ signature, onChange, onSaveDefault }) {
+  const inputRef = useRef(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [error, setError] = useState('')
+
+  const processFile = async (file) => {
+    if (!file) return
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setError('Only PNG or SVG images are supported.')
+      return
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setError('')
+      onChange(dataUrl)
+    } catch {
+      setError('Could not read that file.')
+    }
+  }
+
+  const handleFileInput = (e) => {
+    processFile(e.target.files?.[0])
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = ''
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    processFile(e.dataTransfer.files?.[0])
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
   }
 
   return (
     <div className="card signature-block">
       <div className="party-header">
         <h2>Signature</h2>
-        <label className="btn btn-tiny no-print" htmlFor="signatureUpload">Upload</label>
+        <button
+          type="button"
+          className="btn btn-tiny no-print"
+          onClick={() => inputRef.current?.click()}
+        >
+          Upload
+        </button>
         <input
-          id="signatureUpload"
+          ref={inputRef}
           type="file"
           accept="image/png,image/svg+xml"
           className="visually-hidden no-print"
-          onChange={handleFile}
+          onChange={handleFileInput}
         />
         {signature && (
-          <button className="btn btn-tiny no-print" onClick={onSaveDefault}>Save as default</button>
+          <button type="button" className="btn btn-tiny no-print" onClick={onSaveDefault}>
+            Save as default
+          </button>
         )}
       </div>
-      <div className="signature-preview">
+      <div
+        className={`signature-preview${isDragging ? ' signature-dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragOver}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
         {signature ? (
           <img src={signature} alt="Signature" />
         ) : (
-          <span className="signature-placeholder no-print">No signature uploaded</span>
+          <span className="signature-placeholder no-print">
+            {isDragging ? 'Drop to upload' : 'Drag & drop, or click Upload'}
+          </span>
         )}
       </div>
+      {error && <p className="signature-error no-print">{error}</p>}
     </div>
   )
 }

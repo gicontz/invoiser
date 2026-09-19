@@ -356,6 +356,20 @@ input, textarea, select {
 .signature-placeholder {
   font-size: 0.8rem;
   color: var(--ink-soft);
+  text-align: center;
+  padding: 0 12px;
+}
+
+.signature-dragging {
+  border-color: var(--accent);
+  border-style: solid;
+  background: rgba(47, 111, 237, 0.06);
+}
+
+.signature-error {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
 }
 
 /* ---------- Modals ---------- */
