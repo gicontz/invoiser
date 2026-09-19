@@ -20,11 +20,6 @@ function optionalP(value, className) {
 // nothing can be added below the last printed line.
 const NOTHING_FOLLOWS = '**** Nothing Follows ****'
 
-function pageNumberHtml(pageNumber, totalPages) {
-  if (totalPages < 2) return ''
-  return `<div class="doc-page-number">Page ${pageNumber} of ${totalPages}</div>`
-}
-
 function hoursOf(items) {
   return items
     .filter((item) => item.unit === 'per hour')
@@ -93,8 +88,15 @@ function renderFlatItemsTable(items, currency) {
   </table>`
 }
 
+// Caps the summary page at 15 groups so it stays a single physical page —
+// full detail for every group (capped or not) is always on the Order
+// Details page, so nothing is lost, just not indexed here.
+const GROUP_SUMMARY_CAP = 15
+
 function renderGroupSummaryTable(groups, currency) {
-  const rows = groups
+  const visible = groups.slice(0, GROUP_SUMMARY_CAP)
+  const overflowCount = groups.length - visible.length
+  const rows = visible
     .map(
       (group) => `
       <tr>
@@ -104,13 +106,16 @@ function renderGroupSummaryTable(groups, currency) {
       </tr>`,
     )
     .join('')
+  const overflowRow = overflowCount > 0
+    ? `<tr class="preview-items-overflow"><td colspan="3">+${overflowCount} more group${overflowCount === 1 ? '' : 's'} — see Order Details</td></tr>`
+    : ''
   return `<table class="preview-items preview-items-grouped">
     <thead><tr><th>Group</th><th>Hours</th><th>Total</th></tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody>${rows}${overflowRow}</tbody>
   </table>`
 }
 
-function renderOrderDetailsPage(groups, currency, meta, totalPages) {
+function renderOrderDetailsPage(groups, currency, meta) {
   const groupBlocks = groups
     .map((group) => {
       const rows = group.items
@@ -131,9 +136,13 @@ function renderOrderDetailsPage(groups, currency, meta, totalPages) {
     })
     .join('')
 
-  // Whenever this page exists, it's always the last (and only other)
-  // itemized page — page 1's summary table is an aggregate index, not
-  // itself the itemized list.
+  // A single flowing .doc-page — if the content is too long for one
+  // physical page, print/PDF pagination (@media print's overflow behavior,
+  // same engine either way) naturally continues it onto further pages
+  // rather than compressing or cropping it. No per-page "Page X of Y"
+  // footer: Chromium doesn't support CSS's paged-media page-counter margin
+  // boxes, so there's no way to compute an accurate one for content whose
+  // final page count isn't known until it's actually laid out.
   return `<div class="doc-page order-details">
     <div class="order-details-header">
       <span>Invoice ${escapeHtml(meta.invoiceNumber) || '—'}</span>
@@ -141,7 +150,6 @@ function renderOrderDetailsPage(groups, currency, meta, totalPages) {
     </div>
     ${groupBlocks}
     <p class="nothing-follows">${NOTHING_FOLLOWS}</p>
-    ${pageNumberHtml(2, totalPages)}
   </div>`
 }
 
@@ -162,10 +170,12 @@ function renderSignatureBlock(signature, signatoryName) {
 //
 // Output is one or two `.doc-page` blocks — page 1 is always the invoice
 // itself; a second "Order Details" page only exists when Separate Items is
-// on and produces any groups. Native print paginates them via @media
-// print's break-before rule (document.css); PDF export (renderInvoicePdf.js)
-// renders the same stylesheet through Playwright, so it paginates the same
-// way.
+// on and produces any groups, starting on its own page via @media print's
+// break-before rule (document.css). If Order Details' own content is too
+// long for one physical page, it naturally continues onto further pages —
+// this isn't a fixed "page 2 of 2", it can be page 2, 3, 4... as needed.
+// PDF export (renderInvoicePdf.js) renders the same stylesheet through
+// Playwright, so it paginates exactly the same way as native print.
 export function renderInvoiceBody({
   designId, biller, client, meta, items, notes, totals, bank, signature, signatoryName, separateItems,
 }) {
@@ -173,7 +183,6 @@ export function renderInvoiceBody({
   const hasBankDetails = bank.holder || bank.bankName || bank.bankAddress || bank.accountNumber || bank.swift
   const groups = separateItems ? groupItems(items) : null
   const hasPage2 = Boolean(separateItems && groups && groups.length > 0)
-  const totalPages = hasPage2 ? 2 : 1
   const invoiceTotalHours = hoursOf(items)
 
   const cappedRow = totals.capped
@@ -241,10 +250,9 @@ export function renderInvoiceBody({
       <div class="doc-footer-bank">${bankBlock}</div>
       <div class="doc-footer-signature">${renderSignatureBlock(signature, signatoryName)}</div>
     </div>
-    ${pageNumberHtml(1, totalPages)}
   </div>`
 
-  const page2 = hasPage2 ? renderOrderDetailsPage(groups, currency, meta, totalPages) : ''
+  const page2 = hasPage2 ? renderOrderDetailsPage(groups, currency, meta) : ''
 
   return `<div class="preview-sheet" data-design="${escapeHtml(designId)}">${page1}${page2}</div>`
 }

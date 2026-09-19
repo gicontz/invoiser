@@ -76,6 +76,12 @@ body {
   border-bottom: none !important;
 }
 
+.preview-items-overflow td {
+  text-align: left !important;
+  font-style: italic;
+  color: var(--doc-ink-soft);
+}
+
 .nothing-follows {
   margin: 12px 0 0;
   text-align: center;
