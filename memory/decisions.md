@@ -81,3 +81,15 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **Why:** Storing "overdue" as a real status would require a scheduled job (cron) to sweep and flip invoices as they cross their due date. Computing it at read time keeps the whole backend serverless with zero scheduled/background functions.
 
 **Tradeoff accepted:** None functionally — every place that displays or filters by status must remember to apply the computed-overdue check on top of the stored `sent` status, rather than being able to filter on a stored `overdue` value directly.
+
+---
+
+## D9: Optimistic Concurrency Guard on Blob Writes (Closes the D4 Race-Condition Risk)
+
+**Decision:** Every mutating write to a Blob resource is now conditional on the ETag read moments before (`@vercel/blob`'s `ifMatch`), via a shared `updateUserData(resource, mutate)` helper in `storage.js`. On a write conflict it re-reads the now-current data, re-runs `mutate` against it, and retries once; a second conflict surfaces as a 409, not a silent overwrite or a raw 500.
+
+**Why:** D4 accepted read-modify-write-per-blob as fine at personal scale but flagged the unaddressed race: two near-simultaneous writes to the same file could clobber each other. This closes that out before go-live rather than shipping on the accepted-risk footnote indefinitely.
+
+**A real bug caught while implementing this, worth recording:** `@vercel/blob`'s `get()` returns the ETag nested at `result.blob.etag`, not `result.etag` (despite the latter looking plausible from the type names). The first version of this guard read the wrong field, got `undefined`, and silently passed `ifMatch: undefined` — meaning every write was still unconditional, exactly the bug this was meant to fix, but appearing to work fine until tested against a real two-writer race (one edit silently clobbered the other with no error). Caught by writing an isolated script against the real Blob store that explicitly asserted a stale ETag gets rejected — glancing at the code was not enough to catch this.
+
+**Tradeoff accepted:** A route's `mutate` function must be a pure function of "current data → new data" (no closing over the first read) so the retry's re-invocation is correct — this constrains how mutating routes can be written, in exchange for correctness under real contention.

@@ -1,4 +1,4 @@
-import { readUserData, writeUserData } from '../../_lib/storage.js'
+import { updateUserData, respondToStorageError, RouteError } from '../../_lib/storage.js'
 
 // Manual ledger entry, not a payment gateway (memory/decisions.md D7).
 // Auto-flips to 'paid' once payments cover the total.
@@ -18,26 +18,35 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'receivedAt is required' })
   }
 
-  const invoices = await readUserData('invoices')
-  const index = invoices.findIndex((inv) => inv.id === id)
-  if (index === -1) return res.status(404).json({ error: 'Invoice not found' })
+  try {
+    const { invoice } = await updateUserData('invoices', (invoices) => {
+      const index = invoices.findIndex((inv) => inv.id === id)
+      if (index === -1) throw new RouteError(404, 'Invoice not found')
 
-  const invoice = invoices[index]
-  const payment = {
-    id: crypto.randomUUID(),
-    amount: parsedAmount,
-    receivedAt,
-    note: note || '',
-    createdAt: new Date().toISOString(),
+      const current = invoices[index]
+      const payment = {
+        id: crypto.randomUUID(),
+        amount: parsedAmount,
+        receivedAt,
+        note: note || '',
+        createdAt: new Date().toISOString(),
+      }
+      const payments = [...(current.payments || []), payment]
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+      const updated = {
+        ...current,
+        payments,
+        status: totalPaid >= current.total && current.status === 'sent' ? 'paid' : current.status,
+        updatedAt: new Date().toISOString(),
+      }
+
+      const next = [...invoices]
+      next[index] = updated
+      return { data: next, invoice: updated }
+    })
+    return res.status(201).json(invoice)
+  } catch (error) {
+    if (respondToStorageError(error, res)) return
+    throw error
   }
-  invoice.payments = [...(invoice.payments || []), payment]
-
-  const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0)
-  if (totalPaid >= invoice.total && invoice.status === 'sent') {
-    invoice.status = 'paid'
-  }
-  invoice.updatedAt = new Date().toISOString()
-
-  await writeUserData('invoices', invoices)
-  return res.status(201).json(invoice)
 }

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query
-  const [invoices, settings] = await Promise.all([
+  const [{ data: invoices }, { data: settings }] = await Promise.all([
     readUserData('invoices'),
     readUserData('settings'),
   ])
