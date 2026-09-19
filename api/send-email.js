@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invoiceId and to are required' })
   }
 
-  const [invoices, settings] = await Promise.all([
+  const [{ data: invoices }, { data: settings }] = await Promise.all([
     readUserData('invoices'),
     readUserData('settings'),
   ])

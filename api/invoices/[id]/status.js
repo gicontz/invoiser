@@ -1,4 +1,4 @@
-import { readUserData, writeUserData } from '../../_lib/storage.js'
+import { updateUserData, respondToStorageError, RouteError } from '../../_lib/storage.js'
 
 // Policy (epic #13): sent can't be undone, cancelled is terminal — create a
 // new invoice instead of reopening one.
@@ -19,21 +19,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `status must be one of: ${Object.keys(ALLOWED_FROM).join(', ')}` })
   }
 
-  const invoices = await readUserData('invoices')
-  const index = invoices.findIndex((inv) => inv.id === id)
-  if (index === -1) return res.status(404).json({ error: 'Invoice not found' })
+  try {
+    const { invoice } = await updateUserData('invoices', (invoices) => {
+      const index = invoices.findIndex((inv) => inv.id === id)
+      if (index === -1) throw new RouteError(404, 'Invoice not found')
 
-  const invoice = invoices[index]
-  if (!ALLOWED_FROM[status].includes(invoice.status)) {
-    return res.status(409).json({ error: `Cannot mark ${status} from ${invoice.status}` })
+      const current = invoices[index]
+      if (!ALLOWED_FROM[status].includes(current.status)) {
+        throw new RouteError(409, `Cannot mark ${status} from ${current.status}`)
+      }
+
+      const now = new Date().toISOString()
+      const updated = { ...current, status, updatedAt: now }
+      if (status === 'sent') updated.sentAt = now
+      if (status === 'cancelled') updated.cancelledAt = now
+
+      const next = [...invoices]
+      next[index] = updated
+      return { data: next, invoice: updated }
+    })
+    return res.status(200).json(invoice)
+  } catch (error) {
+    if (respondToStorageError(error, res)) return
+    throw error
   }
-
-  const now = new Date().toISOString()
-  invoice.status = status
-  invoice.updatedAt = now
-  if (status === 'sent') invoice.sentAt = now
-  if (status === 'cancelled') invoice.cancelledAt = now
-
-  await writeUserData('invoices', invoices)
-  return res.status(200).json(invoice)
 }

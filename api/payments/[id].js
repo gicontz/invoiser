@@ -1,4 +1,4 @@
-import { readUserData, writeUserData } from '../_lib/storage.js'
+import { updateUserData, respondToStorageError, RouteError } from '../_lib/storage.js'
 
 // Payments are embedded per-invoice (memory/decisions.md D7), so undoing one
 // means finding which invoice holds it.
@@ -9,19 +9,29 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query
-  const invoices = await readUserData('invoices')
-  const invoiceIndex = invoices.findIndex((inv) => (inv.payments || []).some((p) => p.id === id))
-  if (invoiceIndex === -1) return res.status(404).json({ error: 'Payment not found' })
 
-  const invoice = invoices[invoiceIndex]
-  invoice.payments = invoice.payments.filter((p) => p.id !== id)
+  try {
+    const { invoice } = await updateUserData('invoices', (invoices) => {
+      const index = invoices.findIndex((inv) => (inv.payments || []).some((p) => p.id === id))
+      if (index === -1) throw new RouteError(404, 'Payment not found')
 
-  const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0)
-  if (invoice.status === 'paid' && totalPaid < invoice.total) {
-    invoice.status = 'sent'
+      const current = invoices[index]
+      const payments = current.payments.filter((p) => p.id !== id)
+      const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+      const updated = {
+        ...current,
+        payments,
+        status: current.status === 'paid' && totalPaid < current.total ? 'sent' : current.status,
+        updatedAt: new Date().toISOString(),
+      }
+
+      const next = [...invoices]
+      next[index] = updated
+      return { data: next, invoice: updated }
+    })
+    return res.status(200).json(invoice)
+  } catch (error) {
+    if (respondToStorageError(error, res)) return
+    throw error
   }
-  invoice.updatedAt = new Date().toISOString()
-
-  await writeUserData('invoices', invoices)
-  return res.status(200).json(invoice)
 }

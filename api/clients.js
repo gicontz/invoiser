@@ -1,26 +1,31 @@
-import { readUserData, writeUserData } from './_lib/storage.js'
+import { readUserData, updateUserData, respondToStorageError } from './_lib/storage.js'
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const clients = await readUserData('clients')
-    return res.status(200).json(clients)
+    const { data } = await readUserData('clients')
+    return res.status(200).json(data)
   }
 
   if (req.method === 'POST') {
-    const clients = await readUserData('clients')
-    const now = new Date().toISOString()
-    const client = {
-      id: crypto.randomUUID(),
-      name: req.body?.name || '',
-      address: req.body?.address || '',
-      email: req.body?.email || '',
-      phone: req.body?.phone || '',
-      createdAt: now,
-      updatedAt: now,
+    try {
+      const { data, client } = await updateUserData('clients', (clients) => {
+        const now = new Date().toISOString()
+        const newClient = {
+          id: crypto.randomUUID(),
+          name: req.body?.name || '',
+          address: req.body?.address || '',
+          email: req.body?.email || '',
+          phone: req.body?.phone || '',
+          createdAt: now,
+          updatedAt: now,
+        }
+        return { data: [...clients, newClient], client: newClient }
+      })
+      return res.status(201).json(client)
+    } catch (error) {
+      if (respondToStorageError(error, res)) return
+      throw error
     }
-    clients.push(client)
-    await writeUserData('clients', clients)
-    return res.status(201).json(client)
   }
 
   res.setHeader('Allow', 'GET, POST')

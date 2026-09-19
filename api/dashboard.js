@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const invoices = await readUserData('invoices')
+  const { data: invoices } = await readUserData('invoices')
   const active = invoices.filter((inv) => inv.status !== 'cancelled')
 
   const totalInvoiced = active.reduce((sum, inv) => sum + (inv.total || 0), 0)
