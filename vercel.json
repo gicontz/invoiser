@@ -1,5 +1,9 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/dashboard", "destination": "/" },
+    { "source": "/invoices", "destination": "/" },
+    { "source": "/invoices/:path*", "destination": "/" },
+    { "source": "/clients", "destination": "/" },
+    { "source": "/bank-accounts", "destination": "/" }
   ]
 }
