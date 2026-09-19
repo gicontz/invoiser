@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import { computeTotals, makeEmptyItem } from './utils/calc.js'
 import { downloadInvoicePdf } from './utils/pdf.js'
+import { exportStorageToJson, importStorageFromFile } from './utils/backup.js'
 
 import Toolbar from './components/Toolbar.jsx'
 import InvoiceMeta from './components/InvoiceMeta.jsx'
@@ -126,6 +127,16 @@ export default function App() {
     setTimeout(() => setDraftStatus(''), 2000)
   }
 
+  const handleImportFile = async (file) => {
+    try {
+      await importStorageFromFile(file)
+      window.location.reload()
+    } catch {
+      setDraftStatus('Import failed — invalid file')
+      setTimeout(() => setDraftStatus(''), 2000)
+    }
+  }
+
   const handleLoadClient = (savedClient) => {
     setClient({
       name: savedClient.name || '',
@@ -183,6 +194,8 @@ export default function App() {
         onOpenAddressBook={() => setAddressBookOpen(true)}
         onSaveDraft={handleSaveDraft}
         draftStatus={draftStatus}
+        onExport={exportStorageToJson}
+        onImportFile={handleImportFile}
         onPrint={handlePrint}
         onDownloadPdf={handleDownloadPdf}
         onOpenEmail={() => setEmailModalOpen(true)}
