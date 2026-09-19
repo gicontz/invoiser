@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import InvoicesListPage from './pages/InvoicesListPage.jsx'
 import ClientsPage from './pages/ClientsPage.jsx'
 import BankAccountsPage from './pages/BankAccountsPage.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/invoices/:id" element={<InvoiceEditorPage />} />
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/bank-accounts" element={<BankAccountsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>
