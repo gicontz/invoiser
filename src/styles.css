@@ -750,8 +750,17 @@ input, textarea, select {
   overflow-y: auto;
 }
 
+/* Kept off-screen (not display:none) while "closed" — a display:none
+ * parent collapses the iframe to zero width, which breaks Print/PDF/Email
+ * (html2canvas captures whatever on-screen width the .doc-page elements
+ * actually have) even though the pane is only meant to be visually hidden.
+ * Fixed positioning takes it out of flow, same layout effect as display:none,
+ * while the iframe still renders at a real, consistent width. */
 .preview-pane-closed {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 800px;
 }
 
 .preview-pane-label {

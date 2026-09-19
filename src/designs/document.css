@@ -11,14 +11,15 @@
   --doc-radius: 10px;
 }
 
-/* Explicit, consistent print margins — without this the browser falls back
-   to its own default (varies by browser/OS), which also fights Flat's
-   full-bleed header band (it assumes a controlled outer margin, not a
-   card floating inside an unpredictable one). PDF export has its own,
-   separate margin — see PAGE_MARGIN_MM in utils/pdf.js. */
+/* No browser print margin — .doc-page's own 32px padding is already the
+   document's breathing room, so an added browser margin on top of it was
+   redundant, and it fought Flat's full-bleed header band (which assumes a
+   controlled outer edge, not a card floating inside an unpredictable one).
+   PDF export has its own, separate margin — see PAGE_MARGIN_MM in
+   utils/pdf.js. */
 @page {
   size: A4;
-  margin: 14mm;
+  margin: 0;
 }
 
 * { box-sizing: border-box; }
