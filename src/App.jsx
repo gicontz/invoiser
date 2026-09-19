@@ -27,6 +27,26 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Both dates are plain YYYY-MM-DD strings; appending T00:00:00 (no "Z")
+// parses each as local midnight so their difference isn't skewed by the
+// classic UTC-parse/local-format timezone shift.
+function daysBetween(startIso, endIso) {
+  if (!startIso || !endIso) return null
+  const start = new Date(`${startIso}T00:00:00`)
+  const end = new Date(`${endIso}T00:00:00`)
+  return Math.round((end - start) / (1000 * 60 * 60 * 24))
+}
+
+// Recognizes our own auto-generated text so we know it's still safe to
+// regenerate — once a user edits notes into something else, we leave it alone.
+const AUTO_PAYMENT_NOTE = /^Payment due (within \d+ days? of invoice date|upon receipt)\.$/
+
+function paymentNoteFor(invoiceDate, dueDate) {
+  const days = daysBetween(invoiceDate, dueDate)
+  if (days === null || days <= 0) return 'Payment due upon receipt.'
+  return `Payment due within ${days} day${days === 1 ? '' : 's'} of invoice date.`
+}
+
 // Seeded draft: PMC B2B WordPress hours, Sept 15-18 2026. Rates left blank to fill in.
 const draftItemsSeed = [
   { description: 'Sept 15–16 (2:00 PM–1:00 AM) — Initial dev', qty: 11 },
@@ -89,7 +109,7 @@ export default function App() {
   const [taxPercent, setTaxPercent] = useState(initialDraft?.taxPercent ?? 0)
   const [discountAmount, setDiscountAmount] = useState(initialDraft?.discountAmount ?? 0)
   const [capAmount, setCapAmount] = useState(initialDraft?.capAmount ?? '')
-  const [notes, setNotes] = useState(initialDraft?.notes ?? 'Payment due within 7 days of invoice date.')
+  const [notes, setNotes] = useState(initialDraft?.notes ?? paymentNoteFor(meta.invoiceDate, meta.dueDate))
   const [bank, setBank] = useState(initialDraft?.bank ?? bankDefault)
   const [signature, setSignature] = useState(initialDraft?.signature ?? signatureDefault)
   const [sameAsBusiness, setSameAsBusiness] = useState(initialDraft?.sameAsBusiness ?? true)
@@ -146,9 +166,10 @@ export default function App() {
     setInvoiceCounter(nextCount)
     setBiller(billerDefault)
     setClient(emptyClient)
+    const nextInvoiceDate = todayIso()
     setMeta({
       invoiceNumber: `INV-${String(nextCount).padStart(4, '0')}`,
-      invoiceDate: todayIso(),
+      invoiceDate: nextInvoiceDate,
       dueDate: '',
       currency: meta.currency,
     })
@@ -156,7 +177,7 @@ export default function App() {
     setTaxPercent(0)
     setDiscountAmount(0)
     setCapAmount('')
-    setNotes('Payment due within 7 days of invoice date.')
+    setNotes(paymentNoteFor(nextInvoiceDate, ''))
     setBank(bankDefault)
     setSignature(signatureDefault)
     setSameAsBusiness(true)
@@ -197,6 +218,18 @@ export default function App() {
     }
   }
 
+  const handleMetaChange = (nextMeta) => {
+    const dueDateChanged = nextMeta.dueDate !== meta.dueDate
+    const invoiceDateChanged = nextMeta.invoiceDate !== meta.invoiceDate
+    // Keep the payment-terms note in sync with the due date — but only
+    // while it still looks like our own auto-generated text, so a
+    // user's custom notes are never silently overwritten.
+    if ((dueDateChanged || invoiceDateChanged) && AUTO_PAYMENT_NOTE.test(notes.trim())) {
+      setNotes(paymentNoteFor(nextMeta.invoiceDate, nextMeta.dueDate))
+    }
+    setMeta(nextMeta)
+  }
+
   const handleLoadClient = (savedClient) => {
     setClient({
       name: savedClient.name || '',
@@ -221,10 +254,12 @@ export default function App() {
     enqueueSnackbar('Client saved', { variant: 'success' })
   }
 
+  // No toast here on success — print() can block until the OS dialog
+  // closes, so a toast fired after it lands late/out of order. Only
+  // surface this if something actually goes wrong.
   const handlePrint = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
     previewFrameRef.current?.print()
-    enqueueSnackbar('Opening print dialog…', { variant: 'info' })
   }
 
   const handleDownloadPdf = async () => {
@@ -319,7 +354,7 @@ export default function App() {
       <div className={`app${previewOpen ? ' preview-open' : ''}`}>
         <div className="app-body">
           <main className="sheet">
-            <InvoiceMeta meta={meta} onChange={setMeta} />
+            <InvoiceMeta meta={meta} onChange={handleMetaChange} />
 
             <section className="parties">
               <BillerCard
