@@ -4,12 +4,17 @@ export function lineSubtotal(item) {
   return (Number.isFinite(qty) ? qty : 0) * (Number.isFinite(rate) ? rate : 0)
 }
 
-export function computeTotals(items, taxPercent, discountAmount) {
+export function computeTotals(items, taxPercent, discountAmount, capAmount) {
   const subtotal = items.reduce((sum, item) => sum + lineSubtotal(item), 0)
   const tax = subtotal * ((parseFloat(taxPercent) || 0) / 100)
   const discount = parseFloat(discountAmount) || 0
   const grandTotal = Math.max(0, subtotal + tax - discount)
-  return { subtotal, tax, discount, grandTotal }
+
+  const cap = parseFloat(capAmount)
+  const capped = Number.isFinite(cap) && cap > 0 && grandTotal > cap
+  const billed = capped ? cap : grandTotal
+
+  return { subtotal, tax, discount, grandTotal, billed, capped }
 }
 
 export function formatMoney(amount, currency) {
