@@ -1,0 +1,285 @@
+/* Design themes — approved directions from design/styles/*.md.
+ *
+ * Each block is scoped under [data-design="id"], set on the invoice
+ * document's root (.preview-sheet). Only that element and its children are
+ * affected — the editable form elsewhere in the app never carries this
+ * attribute and is never themed. 'default' has no block here; it's just
+ * the neutral styling already in styles.css.
+ */
+
+/* ============================= Pastel ============================= */
+[data-design="pastel"] {
+  --m-bg: #faf6f0;
+  --m-ink: #3d3644;
+  --m-ink-soft: #6e6478;
+  --m-accent: #8fa893;
+
+  background: var(--m-bg);
+  color: var(--m-ink);
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgba(61, 54, 68, 0.08), 0 16px 32px rgba(61, 54, 68, 0.06);
+  font-family: "Karla", sans-serif;
+}
+
+[data-design="pastel"] .doc-head {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 26px;
+}
+
+[data-design="pastel"] .doc-biller-name {
+  font-family: "Quicksand", sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--m-ink);
+}
+
+[data-design="pastel"] .doc-biller-sub,
+[data-design="pastel"] .doc-meta {
+  color: var(--m-ink-soft);
+}
+
+[data-design="pastel"] .doc-meta-num {
+  font-family: "Quicksand", sans-serif;
+  color: var(--m-ink);
+}
+
+[data-design="pastel"] .preview-party h2,
+[data-design="pastel"] .preview-bank h2 {
+  color: var(--m-accent);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+[data-design="pastel"] .preview-items th {
+  border-bottom: 1px solid rgba(61, 54, 68, 0.12);
+  color: var(--m-ink-soft);
+}
+
+[data-design="pastel"] .preview-items td {
+  border-bottom: 1px solid rgba(61, 54, 68, 0.08);
+}
+
+[data-design="pastel"] .preview-muted {
+  color: var(--m-ink-soft);
+}
+
+[data-design="pastel"] .preview-totals > div {
+  color: var(--m-ink-soft);
+}
+
+[data-design="pastel"] .preview-grand-total {
+  border-top: none;
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: var(--m-accent);
+  color: var(--m-ink);
+  border-radius: 100px;
+  font-family: "Quicksand", sans-serif;
+}
+
+[data-design="pastel"] .preview-notes {
+  color: var(--m-ink-soft);
+}
+
+/* ============================ Elegant ============================= */
+[data-design="elegant"] {
+  --m-bg: #f7f4ec;
+  --m-ink: #1b2430;
+  --m-ink-soft: #5b6472;
+  --m-brass: #b08d57;
+
+  background: var(--m-bg);
+  color: var(--m-ink);
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid rgba(27, 36, 48, 0.1);
+  font-family: "Inter", sans-serif;
+}
+
+[data-design="elegant"] .doc-head {
+  border-bottom: 1px solid var(--m-brass);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+[data-design="elegant"] .doc-biller-name {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.7rem;
+  color: var(--m-ink);
+}
+
+[data-design="elegant"] .doc-biller-sub,
+[data-design="elegant"] .doc-meta {
+  color: var(--m-ink-soft);
+}
+
+[data-design="elegant"] .doc-meta-num {
+  font-family: "Inter", sans-serif;
+  letter-spacing: 0.02em;
+  color: var(--m-ink);
+}
+
+[data-design="elegant"] .preview-party h2,
+[data-design="elegant"] .preview-bank h2 {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--m-ink-soft);
+}
+
+[data-design="elegant"] .preview-items th {
+  border-bottom: 1px solid rgba(176, 141, 87, 0.5);
+  color: var(--m-ink-soft);
+  font-weight: 500;
+}
+
+[data-design="elegant"] .preview-items td {
+  border-bottom: 1px solid rgba(27, 36, 48, 0.08);
+}
+
+[data-design="elegant"] .preview-muted {
+  color: var(--m-ink-soft);
+}
+
+[data-design="elegant"] .preview-totals > div {
+  color: var(--m-ink-soft);
+}
+
+[data-design="elegant"] .preview-grand-total {
+  border-top: 3px double var(--m-ink);
+  margin-top: 10px;
+  padding-top: 12px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--m-ink);
+}
+
+[data-design="elegant"] .preview-notes {
+  color: var(--m-ink-soft);
+  font-style: italic;
+}
+
+/* ============================== Flat =============================== */
+[data-design="flat"] {
+  --m-bg: #ffffff;
+  --m-ink: #16181d;
+  --m-ink-soft: #5b6472;
+  --m-accent: #2d4fde;
+  --m-fog: #eef0f4;
+
+  background: var(--m-bg);
+  color: var(--m-ink);
+  border-radius: 0;
+  box-shadow: 0 1px 2px rgba(15, 15, 20, 0.08), 0 18px 40px rgba(15, 15, 20, 0.12);
+  /* Zero out the base .preview-sheet padding (document.css) entirely — the
+     header band below needs to be full-bleed; every other section supplies
+     its own 32px inset via margin instead. */
+  padding: 0 0 32px;
+  font-family: "IBM Plex Sans", sans-serif;
+  overflow: hidden;
+}
+
+[data-design="flat"] .doc-head {
+  background: var(--m-accent);
+  color: #fff;
+  margin: 0 0 24px;
+  padding: 26px 32px;
+  border-bottom: none;
+}
+
+[data-design="flat"] .doc-biller-name {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  color: #fff;
+}
+
+[data-design="flat"] .doc-biller-sub,
+[data-design="flat"] .doc-meta {
+  color: #c9d3fa;
+}
+
+[data-design="flat"] .doc-meta-num {
+  color: #fff;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.95rem;
+}
+
+[data-design="flat"] .preview-parties {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+[data-design="flat"] .preview-items {
+  margin-left: 32px;
+  width: calc(100% - 64px);
+}
+
+[data-design="flat"] .preview-notes {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+[data-design="flat"] .preview-totals {
+  margin-right: 32px;
+}
+
+[data-design="flat"] .preview-bank {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+[data-design="flat"] .preview-signature {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+[data-design="flat"] .preview-party h2,
+[data-design="flat"] .preview-bank h2 {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--m-ink-soft);
+}
+
+[data-design="flat"] .preview-items th {
+  border-bottom: 2px solid var(--m-ink);
+  color: var(--m-ink);
+  font-family: "IBM Plex Mono", monospace;
+  text-transform: none;
+}
+
+[data-design="flat"] .preview-items tbody tr:nth-child(odd) td {
+  background: var(--m-fog);
+}
+
+[data-design="flat"] .preview-items td {
+  border-bottom: none;
+}
+
+[data-design="flat"] .preview-muted {
+  color: var(--m-ink-soft);
+}
+
+[data-design="flat"] .preview-totals > div {
+  color: var(--m-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-design="flat"] .preview-grand-total {
+  background: var(--m-accent);
+  color: #fff;
+  border-top: none;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 0;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+[data-design="flat"] .preview-notes {
+  color: var(--m-ink-soft);
+}

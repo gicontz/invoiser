@@ -33,17 +33,32 @@ input, textarea, select {
   white-space: nowrap;
 }
 
-/* ---------- Toolbar ---------- */
+/* ---------- Toolbar ----------
+ * The toolbar sits outside .app in the DOM (see App.jsx) so its background/
+ * border span the full browser width; .toolbar-inner constrains just the
+ * brand + buttons to line up with the document content below.
+ */
 .toolbar {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto;
   padding: 12px 20px;
-  background: var(--paper);
-  border-bottom: 1px solid var(--line);
+  transition: max-width 0.15s ease;
+}
+
+.toolbar-inner-wide {
+  max-width: 1400px;
 }
 
 .toolbar-brand {
@@ -96,10 +111,27 @@ input, textarea, select {
 }
 .btn-tiny:hover { color: var(--ink); border-color: #c7ccd6; }
 
+.btn-ghost.btn-active { background: var(--bg); color: var(--ink); }
+
 /* ---------- Layout ---------- */
 .app {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.app.preview-open {
+  max-width: 1400px;
+}
+
+.app-body {
+  display: block;
+}
+
+.app.preview-open .app-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
 .sheet {
@@ -339,6 +371,20 @@ input, textarea, select {
 .signature-placeholder {
   font-size: 0.8rem;
   color: var(--ink-soft);
+  text-align: center;
+  padding: 0 12px;
+}
+
+.signature-dragging {
+  border-color: var(--accent);
+  border-style: solid;
+  background: rgba(47, 111, 237, 0.06);
+}
+
+.signature-error {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
 }
 
 /* ---------- Modals ---------- */
@@ -440,6 +486,119 @@ input, textarea, select {
 .address-list .address-label { font-weight: 600; }
 .address-list .address-email { color: var(--ink-soft); font-size: 0.8rem; }
 
+/* ---------- Design marketplace ---------- */
+.modal-wide {
+  max-width: 720px;
+}
+
+.design-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.design-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.design-card h4 {
+  margin: 0;
+  padding-right: 70px;
+  font-size: 0.95rem;
+}
+
+.design-card p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.design-card .btn {
+  align-self: flex-start;
+}
+
+.design-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.design-card.locked {
+  background: var(--bg);
+  opacity: 0.75;
+}
+
+.design-card.locked .btn {
+  cursor: not-allowed;
+}
+
+.design-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+.design-swatches {
+  display: flex;
+  gap: 6px;
+}
+
+.design-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ---------- Preview pane ----------
+ * The invoice document itself (palette, type, layout per design) lives
+ * entirely inside the iframe — see designs/document.css and
+ * designs/themes.css. Nothing in this file styles the invoice content.
+ */
+.preview-pane {
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 100px);
+  margin: 24px 0 80px;
+  overflow-y: auto;
+}
+
+.preview-pane-closed {
+  display: none;
+}
+
+.preview-pane-label {
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.preview-frame {
+  width: 100%;
+  border: none;
+  display: block;
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(20, 20, 30, 0.06), 0 8px 24px rgba(20, 20, 30, 0.04);
+}
+
 /* ---------- Print ---------- */
 @media print {
   body { background: var(--paper); }
@@ -457,6 +616,16 @@ input, textarea, select {
   .parties, .foot-grid, .bank-grid { grid-template-columns: 1fr; }
   .bank-grid input { grid-column: span 1 !important; }
   .sheet { padding: 20px; }
-  .toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .toolbar-inner { flex-direction: column; align-items: stretch; gap: 10px; }
   .toolbar-actions { justify-content: flex-end; }
+
+  .app.preview-open { max-width: 100%; }
+  .app.preview-open .app-body { display: block; }
+  .preview-pane {
+    position: static;
+    max-height: none;
+    margin: 0 0 40px;
+  }
+
+  .design-grid { grid-template-columns: 1fr; }
 }
