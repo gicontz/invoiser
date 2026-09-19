@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { enqueueSnackbar } from 'notistack'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import { computeTotals, makeEmptyItem } from './utils/calc.js'
 import { downloadInvoicePdf } from './utils/pdf.js'
@@ -141,6 +142,7 @@ export default function App() {
     } catch {
       // ignore
     }
+    enqueueSnackbar('Started a new invoice', { variant: 'info' })
   }
 
   const handleSaveDraft = () => {
@@ -148,8 +150,10 @@ export default function App() {
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
       setDraftStatus('Draft saved')
+      enqueueSnackbar('Draft saved', { variant: 'success' })
     } catch {
       setDraftStatus('Could not save draft')
+      enqueueSnackbar('Could not save draft', { variant: 'error' })
     }
     setTimeout(() => setDraftStatus(''), 2000)
   }
@@ -157,9 +161,11 @@ export default function App() {
   const handleImportFile = async (file) => {
     try {
       await importStorageFromFile(file)
+      enqueueSnackbar('Data imported — reloading…', { variant: 'success' })
       window.location.reload()
     } catch {
       setDraftStatus('Import failed — invalid file')
+      enqueueSnackbar('Import failed — invalid file', { variant: 'error' })
       setTimeout(() => setDraftStatus(''), 2000)
     }
   }
@@ -174,7 +180,10 @@ export default function App() {
   }
 
   const handleSaveClient = () => {
-    if (!client.name.trim()) return
+    if (!client.name.trim()) {
+      enqueueSnackbar('Enter a client name first', { variant: 'warning' })
+      return
+    }
     setClients((prev) => {
       const existing = prev.find((c) => c.name === client.name)
       if (existing) {
@@ -182,23 +191,35 @@ export default function App() {
       }
       return [...prev, { id: crypto.randomUUID(), ...client }]
     })
+    enqueueSnackbar('Client saved', { variant: 'success' })
   }
 
   const handlePrint = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
     previewFrameRef.current?.print()
+    enqueueSnackbar('Opening print dialog…', { variant: 'info' })
   }
 
   const handleDownloadPdf = async () => {
     await previewFrameRef.current?.refresh(invoiceHtml)
     const target = previewFrameRef.current?.getCaptureTarget()
-    return downloadInvoicePdf(target, `${meta.invoiceNumber || 'invoice'}.pdf`)
+    try {
+      await downloadInvoicePdf(target, `${meta.invoiceNumber || 'invoice'}.pdf`)
+      enqueueSnackbar('PDF downloaded', { variant: 'success' })
+    } catch {
+      enqueueSnackbar('Could not generate the PDF', { variant: 'error' })
+      throw new Error('PDF generation failed')
+    }
   }
 
   const handleSendEmail = async ({ to, cc, bcc, subject, body }) => {
     // Kick off the PDF download first so it's ready for the user to attach,
     // then hand off to their default mail client with everything prefilled.
-    await handleDownloadPdf()
+    try {
+      await handleDownloadPdf()
+    } catch {
+      return
+    }
     const params = new URLSearchParams()
     if (cc) params.set('cc', cc)
     if (bcc) params.set('bcc', bcc)
@@ -207,10 +228,43 @@ export default function App() {
     const mailto = `mailto:${encodeURIComponent(to)}?${params.toString()}`
     window.location.href = mailto
     setEmailModalOpen(false)
+    enqueueSnackbar('Mail client opened', { variant: 'success' })
   }
 
-  const handleAddAddress = (entry) => setAddressBook((prev) => [...prev, entry])
-  const handleRemoveAddress = (id) => setAddressBook((prev) => prev.filter((entry) => entry.id !== id))
+  const handleAddAddress = (entry) => {
+    setAddressBook((prev) => [...prev, entry])
+    enqueueSnackbar('Address saved', { variant: 'success' })
+  }
+
+  const handleRemoveAddress = (id) => {
+    setAddressBook((prev) => prev.filter((entry) => entry.id !== id))
+    enqueueSnackbar('Address removed', { variant: 'warning' })
+  }
+
+  const handleSelectDesign = (id) => {
+    setSelectedDesignId(id)
+    enqueueSnackbar('Design updated', { variant: 'success' })
+  }
+
+  const handleExport = () => {
+    exportStorageToJson()
+    enqueueSnackbar('Backup exported', { variant: 'success' })
+  }
+
+  const handleSaveBillerDefault = () => {
+    setBillerDefault(biller)
+    enqueueSnackbar('Biller info saved as default', { variant: 'success' })
+  }
+
+  const handleSaveBankDefault = () => {
+    setBankDefault(bank)
+    enqueueSnackbar('Bank details saved as default', { variant: 'success' })
+  }
+
+  const handleSaveSignatureDefault = () => {
+    setSignatureDefault(signature)
+    enqueueSnackbar('Signature saved as default', { variant: 'success' })
+  }
 
   const defaultSubject = `Invoice ${meta.invoiceNumber} from ${biller.name || 'me'}`
   const defaultBody =
@@ -219,13 +273,13 @@ export default function App() {
     `due ${meta.dueDate || 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
 
   return (
-    <div className={`app${previewOpen ? ' preview-open' : ''}`}>
+    <>
       <Toolbar
         onNew={handleNewInvoice}
         onOpenAddressBook={() => setAddressBookOpen(true)}
         onSaveDraft={handleSaveDraft}
         draftStatus={draftStatus}
-        onExport={exportStorageToJson}
+        onExport={handleExport}
         onImportFile={handleImportFile}
         onPrint={handlePrint}
         onDownloadPdf={handleDownloadPdf}
@@ -235,85 +289,87 @@ export default function App() {
         onTogglePreview={() => setPreviewOpen((prev) => !prev)}
       />
 
-      <div className="app-body">
-        <main className="sheet">
-          <InvoiceMeta meta={meta} onChange={setMeta} />
+      <div className={`app${previewOpen ? ' preview-open' : ''}`}>
+        <div className="app-body">
+          <main className="sheet">
+            <InvoiceMeta meta={meta} onChange={setMeta} />
 
-          <section className="parties">
-            <BillerCard
-              biller={biller}
-              onChange={setBiller}
-              onSaveDefault={() => setBillerDefault(biller)}
-            />
-            <ClientCard
-              client={client}
-              clients={clients}
-              onChange={setClient}
-              onLoadClient={handleLoadClient}
-              onSaveClient={handleSaveClient}
-            />
-          </section>
+            <section className="parties">
+              <BillerCard
+                biller={biller}
+                onChange={setBiller}
+                onSaveDefault={handleSaveBillerDefault}
+              />
+              <ClientCard
+                client={client}
+                clients={clients}
+                onChange={setClient}
+                onLoadClient={handleLoadClient}
+                onSaveClient={handleSaveClient}
+              />
+            </section>
 
-          <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
+            <ItemsTable items={items} currency={meta.currency} onChange={setItems} />
 
-          <div className="card notes">
-            <label htmlFor="notes">Notes / Terms</label>
-            <textarea id="notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
+            <div className="card notes">
+              <label htmlFor="notes">Notes / Terms</label>
+              <textarea id="notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
 
-          <div className="card">
-            <Totals
-              subtotal={totals.subtotal}
-              tax={totals.tax}
-              taxPercent={taxPercent}
-              discount={discountAmount}
-              grandTotal={totals.grandTotal}
-              capAmount={capAmount}
-              billed={totals.billed}
-              capped={totals.capped}
-              currency={meta.currency}
-              onTaxChange={setTaxPercent}
-              onDiscountChange={setDiscountAmount}
-              onCapChange={setCapAmount}
-            />
-          </div>
+            <div className="card">
+              <Totals
+                subtotal={totals.subtotal}
+                tax={totals.tax}
+                taxPercent={taxPercent}
+                discount={discountAmount}
+                grandTotal={totals.grandTotal}
+                capAmount={capAmount}
+                billed={totals.billed}
+                capped={totals.capped}
+                currency={meta.currency}
+                onTaxChange={setTaxPercent}
+                onDiscountChange={setDiscountAmount}
+                onCapChange={setCapAmount}
+              />
+            </div>
 
-          <section className="foot-grid">
-            <BankDetails bank={bank} onChange={setBank} onSaveDefault={() => setBankDefault(bank)} />
-            <SignatureUpload
-              signature={signature}
-              onChange={setSignature}
-              onSaveDefault={() => setSignatureDefault(signature)}
-            />
-          </section>
-        </main>
+            <section className="foot-grid">
+              <BankDetails bank={bank} onChange={setBank} onSaveDefault={handleSaveBankDefault} />
+              <SignatureUpload
+                signature={signature}
+                onChange={setSignature}
+                onSaveDefault={handleSaveSignatureDefault}
+              />
+            </section>
+          </main>
 
-        <PreviewPane ref={previewFrameRef} open={previewOpen} />
+          <PreviewPane ref={previewFrameRef} open={previewOpen} />
+        </div>
+
+        <EmailModal
+          open={emailModalOpen}
+          onClose={() => setEmailModalOpen(false)}
+          addressBook={addressBook}
+          defaultSubject={defaultSubject}
+          defaultBody={defaultBody}
+          onSend={handleSendEmail}
+        />
+
+        <AddressBookModal
+          open={addressBookOpen}
+          onClose={() => setAddressBookOpen(false)}
+          addresses={addressBook}
+          onAdd={handleAddAddress}
+          onRemove={handleRemoveAddress}
+        />
+
+        <DesignMarketplace
+          open={designsOpen}
+          onClose={() => setDesignsOpen(false)}
+          selectedDesignId={selectedDesignId}
+          onSelect={handleSelectDesign}
+        />
       </div>
-
-      <EmailModal
-        open={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
-        addressBook={addressBook}
-        defaultSubject={defaultSubject}
-        defaultBody={defaultBody}
-        onSend={handleSendEmail}
-      />
-
-      <AddressBookModal
-        open={addressBookOpen}
-        onClose={() => setAddressBookOpen(false)}
-        addresses={addressBook}
-        onAdd={handleAddAddress}
-        onRemove={handleRemoveAddress}
-      />
-
-      <DesignMarketplace
-        open={designsOpen}
-        onClose={() => setDesignsOpen(false)}
-        selectedDesignId={selectedDesignId}
-        onSelect={setSelectedDesignId}
-      />
-    </div>
+    </>
   )
 }

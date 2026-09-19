@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { enqueueSnackbar } from 'notistack'
 
 const ACCEPTED_TYPES = ['image/png', 'image/svg+xml']
 
@@ -20,14 +21,17 @@ export default function SignatureUpload({ signature, onChange, onSaveDefault }) 
     if (!file) return
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setError('Only PNG or SVG images are supported.')
+      enqueueSnackbar('Only PNG or SVG images are supported', { variant: 'error' })
       return
     }
     try {
       const dataUrl = await readFileAsDataUrl(file)
       setError('')
       onChange(dataUrl)
+      enqueueSnackbar('Signature uploaded', { variant: 'success' })
     } catch {
       setError('Could not read that file.')
+      enqueueSnackbar('Could not read that file', { variant: 'error' })
     }
   }
 
