@@ -1,6 +1,19 @@
 import { formatMoney } from '../utils/calc.js'
 
-export default function Totals({ subtotal, tax, taxPercent, discount, grandTotal, currency, onTaxChange, onDiscountChange }) {
+export default function Totals({
+  subtotal,
+  tax,
+  taxPercent,
+  discount,
+  grandTotal,
+  capAmount,
+  billed,
+  capped,
+  currency,
+  onTaxChange,
+  onDiscountChange,
+  onCapChange,
+}) {
   return (
     <div className="totals">
       <div className="totals-row">
@@ -37,9 +50,29 @@ export default function Totals({ subtotal, tax, taxPercent, discount, grandTotal
         />
       </div>
 
+      <div className="totals-row">
+        <label htmlFor="capAmount">Cap (optional)</label>
+        <input
+          id="capAmount"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="No cap"
+          value={capAmount}
+          onChange={(e) => onCapChange(e.target.value)}
+        />
+      </div>
+
+      {capped && (
+        <div className="totals-row">
+          <span>Logged total (uncapped)</span>
+          <span>{formatMoney(grandTotal, currency)}</span>
+        </div>
+      )}
+
       <div className="totals-row grand-total">
-        <span>Total Due</span>
-        <span>{formatMoney(grandTotal, currency)}</span>
+        <span>Total Due{capped ? ' (capped)' : ''}</span>
+        <span>{formatMoney(billed, currency)}</span>
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
 import { computeTotals, makeEmptyItem } from './utils/calc.js'
 import { downloadInvoicePdf } from './utils/pdf.js'
+import { exportStorageToJson, importStorageFromFile } from './utils/backup.js'
 
 import Toolbar from './components/Toolbar.jsx'
 import InvoiceMeta from './components/InvoiceMeta.jsx'
@@ -24,8 +25,36 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Seeded draft: PMC B2B WordPress hours, Sept 15-18 2026. Rates left blank to fill in.
+const draftItemsSeed = [
+  { description: 'Sept 15–16 (2:00 PM–1:00 AM) — Initial dev', qty: 11 },
+  { description: 'Sept 16 (9:00–9:30 AM) — Meeting', qty: 0.5 },
+  { description: 'Sept 16 (9:30 AM–4:00 PM) — Polishes', qty: 6.5 },
+  { description: 'Sept 16 (4:00–4:30 PM) — Meeting', qty: 0.5 },
+  { description: 'Sept 16 (4:30–6:00 PM) — Last polishes', qty: 1.5 },
+  { description: 'Sept 16 (8:00–10:00 PM) — Troubleshoot staging env access', qty: 2 },
+  { description: 'Sept 17 (9:00 AM–12:00 PM) — Deployment and troubleshooting', qty: 3 },
+  { description: 'Sept 17 (4:00–4:30 PM) — Meeting with Nate and Shin', qty: 0.5 },
+  { description: "Sept 17 (4:30–5:30 PM) — Polishes from Nate's feedback", qty: 1 },
+  { description: 'Sept 18 (8:30–10:00 AM) — Production deployment', qty: 1.5 },
+  { description: 'Sept 18 (11:00 AM–12:00 PM) — Troubleshooting and finalization with JP', qty: 1 },
+].map((entry) => ({ id: crypto.randomUUID(), unit: 'per hour', rate: '', ...entry }))
+
+const DRAFT_KEY = 'invoiser_draft_invoice'
+
+function readSavedDraft() {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const sheetRef = useRef(null)
+  const [initialDraft] = useState(readSavedDraft)
+  const [draftStatus, setDraftStatus] = useState('')
 
   // ---- Persisted defaults / lists (survive across invoices) ----
   const [billerDefault, setBillerDefault] = useLocalStorage('invoiser_biller_default', {
@@ -42,29 +71,32 @@ export default function App() {
   const [selectedDesignId, setSelectedDesignId] = useLocalStorage('invoiser_selected_design', DEFAULT_DESIGN_ID)
   const [previewOpen, setPreviewOpen] = useLocalStorage('invoiser_preview_open', false)
 
-  // ---- Current invoice state ----
-  const [biller, setBiller] = useState(billerDefault)
-  const [client, setClient] = useState(emptyClient)
-  const [meta, setMeta] = useState({
-    invoiceNumber: `INV-${String(invoiceCounter).padStart(4, '0')}`,
-    invoiceDate: todayIso(),
-    dueDate: '',
-    currency: 'PHP',
-  })
-  const [items, setItems] = useState([makeEmptyItem()])
-  const [taxPercent, setTaxPercent] = useState(0)
-  const [discountAmount, setDiscountAmount] = useState(0)
-  const [notes, setNotes] = useState('Payment due within 7 days of invoice date.')
-  const [bank, setBank] = useState(bankDefault)
-  const [signature, setSignature] = useState(signatureDefault)
+  // ---- Current invoice state (restored from a saved draft, if any) ----
+  const [biller, setBiller] = useState(initialDraft?.biller ?? billerDefault)
+  const [client, setClient] = useState(initialDraft?.client ?? emptyClient)
+  const [meta, setMeta] = useState(
+    initialDraft?.meta ?? {
+      invoiceNumber: `INV-${String(invoiceCounter).padStart(4, '0')}`,
+      invoiceDate: todayIso(),
+      dueDate: '',
+      currency: 'PHP',
+    },
+  )
+  const [items, setItems] = useState(initialDraft?.items ?? draftItemsSeed)
+  const [taxPercent, setTaxPercent] = useState(initialDraft?.taxPercent ?? 0)
+  const [discountAmount, setDiscountAmount] = useState(initialDraft?.discountAmount ?? 0)
+  const [capAmount, setCapAmount] = useState(initialDraft?.capAmount ?? '')
+  const [notes, setNotes] = useState(initialDraft?.notes ?? 'Payment due within 7 days of invoice date.')
+  const [bank, setBank] = useState(initialDraft?.bank ?? bankDefault)
+  const [signature, setSignature] = useState(initialDraft?.signature ?? signatureDefault)
 
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [addressBookOpen, setAddressBookOpen] = useState(false)
   const [designsOpen, setDesignsOpen] = useState(false)
 
   const totals = useMemo(
-    () => computeTotals(items, taxPercent, discountAmount),
-    [items, taxPercent, discountAmount],
+    () => computeTotals(items, taxPercent, discountAmount, capAmount),
+    [items, taxPercent, discountAmount, capAmount],
   )
 
   // ---- Actions ----
@@ -82,9 +114,36 @@ export default function App() {
     setItems([makeEmptyItem()])
     setTaxPercent(0)
     setDiscountAmount(0)
+    setCapAmount('')
     setNotes('Payment due within 7 days of invoice date.')
     setBank(bankDefault)
     setSignature(signatureDefault)
+    try {
+      window.localStorage.removeItem(DRAFT_KEY)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleSaveDraft = () => {
+    const draft = { biller, client, meta, items, taxPercent, discountAmount, capAmount, notes, bank, signature }
+    try {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+      setDraftStatus('Draft saved')
+    } catch {
+      setDraftStatus('Could not save draft')
+    }
+    setTimeout(() => setDraftStatus(''), 2000)
+  }
+
+  const handleImportFile = async (file) => {
+    try {
+      await importStorageFromFile(file)
+      window.location.reload()
+    } catch {
+      setDraftStatus('Import failed — invalid file')
+      setTimeout(() => setDraftStatus(''), 2000)
+    }
   }
 
   const handleLoadClient = (savedClient) => {
@@ -134,7 +193,7 @@ export default function App() {
   const defaultSubject = `Invoice ${meta.invoiceNumber} from ${biller.name || 'me'}`
   const defaultBody =
     `Hi ${client.name || 'there'},\n\n` +
-    `Please find attached invoice ${meta.invoiceNumber} for ${meta.currency} ${totals.grandTotal.toFixed(2)}, ` +
+    `Please find attached invoice ${meta.invoiceNumber} for ${meta.currency} ${totals.billed.toFixed(2)}, ` +
     `due ${meta.dueDate || 'on receipt'}.\n\nThanks,\n${biller.name || ''}`
 
   return (
@@ -142,6 +201,10 @@ export default function App() {
       <Toolbar
         onNew={handleNewInvoice}
         onOpenAddressBook={() => setAddressBookOpen(true)}
+        onSaveDraft={handleSaveDraft}
+        draftStatus={draftStatus}
+        onExport={exportStorageToJson}
+        onImportFile={handleImportFile}
         onPrint={handlePrint}
         onDownloadPdf={handleDownloadPdf}
         onOpenEmail={() => setEmailModalOpen(true)}
@@ -183,9 +246,13 @@ export default function App() {
               taxPercent={taxPercent}
               discount={discountAmount}
               grandTotal={totals.grandTotal}
+              capAmount={capAmount}
+              billed={totals.billed}
+              capped={totals.capped}
               currency={meta.currency}
               onTaxChange={setTaxPercent}
               onDiscountChange={setDiscountAmount}
+              onCapChange={setCapAmount}
             />
           </div>
 

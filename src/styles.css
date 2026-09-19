@@ -56,8 +56,14 @@ input, textarea, select {
 
 .toolbar-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.draft-status {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
 }
 
 .btn {

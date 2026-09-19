@@ -64,8 +64,12 @@ export default function PreviewPane({ open, biller, client, meta, items, notes, 
           <div><span>Subtotal</span><span>{formatMoney(totals.subtotal, meta.currency)}</span></div>
           <div><span>Tax</span><span>{formatMoney(totals.tax, meta.currency)}</span></div>
           <div><span>Discount</span><span>{formatMoney(totals.discount, meta.currency)}</span></div>
+          {totals.capped && (
+            <div><span>Logged total (uncapped)</span><span>{formatMoney(totals.grandTotal, meta.currency)}</span></div>
+          )}
           <div className="preview-grand-total">
-            <span>Total Due</span><span>{formatMoney(totals.grandTotal, meta.currency)}</span>
+            <span>Total Due{totals.capped ? ' (capped)' : ''}</span>
+            <span>{formatMoney(totals.billed, meta.currency)}</span>
           </div>
         </div>
 
