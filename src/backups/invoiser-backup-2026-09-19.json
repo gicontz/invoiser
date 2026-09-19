@@ -1,0 +1,19 @@
+{
+  "invoiser_biller_default": {
+    "name": "",
+    "address": "",
+    "email": "",
+    "phone": ""
+  },
+  "invoiser_bank_default": {
+    "holder": "",
+    "bankName": "",
+    "bankAddress": "",
+    "accountNumber": "",
+    "swift": ""
+  },
+  "invoiser_signature_default": null,
+  "invoiser_clients": [],
+  "invoiser_address_book": [],
+  "invoiser_invoice_counter": 1
+}
