@@ -53,6 +53,17 @@ export default function InvoicesListPage() {
     }
   }
 
+  const handleDelete = async (invoice) => {
+    if (!window.confirm(`Delete draft ${invoice.invoiceNumber || 'invoice'}? This can't be undone.`)) return
+    try {
+      await api.deleteInvoice(invoice.id)
+      enqueueSnackbar('Draft deleted', { variant: 'warning' })
+      load()
+    } catch (error) {
+      enqueueSnackbar(error.message || 'Could not delete', { variant: 'error' })
+    }
+  }
+
   const handleRecordPayment = async (payment) => {
     try {
       await api.recordPayment(paymentTarget.id, payment)
@@ -106,7 +117,10 @@ export default function InvoicesListPage() {
                     </>
                   )}
                   {inv.status === 'draft' && (
-                    <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
+                    <>
+                      <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
+                      <AsyncButton className="btn-tiny" onClick={() => handleDelete(inv)}>Delete</AsyncButton>
+                    </>
                   )}
                 </span>
               </div>
