@@ -5,6 +5,7 @@
     { "source": "/invoices/:path*", "destination": "/" },
     { "source": "/clients", "destination": "/" },
     { "source": "/bank-accounts", "destination": "/" },
-    { "source": "/settings", "destination": "/" }
+    { "source": "/settings", "destination": "/" },
+    { "source": "/login", "destination": "/" }
   ]
 }

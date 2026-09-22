@@ -5,6 +5,12 @@ async function request(path, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
+  if (res.status === 401) {
+    // Session expired/missing mid-use — bounce to login rather than let
+    // every call site handle this individually.
+    window.location.href = '/login'
+    return new Promise(() => {}) // navigation is in flight; never resolve
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     const error = new Error(body.error || `Request failed (${res.status})`)
@@ -41,4 +47,6 @@ export const api = {
   getDashboard: () => request('/dashboard'),
 
   sendEmail: (data) => request('/send-email', { method: 'POST', body: JSON.stringify(data) }),
+
+  logout: () => fetch('/api/auth/logout', { method: 'POST' }),
 }

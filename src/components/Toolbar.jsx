@@ -1,9 +1,17 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { api } from '../api/client.js'
 
 // Global app-wide nav only — invoice-specific actions (New, Print, Download
 // PDF, Email, Designs, Preview) live in the editor page itself now that
 // there are multiple pages (see DESIGN.md §5 on the app shell).
 export default function Toolbar() {
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await api.logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <header className="toolbar no-print">
       <div className="toolbar-inner">
@@ -28,6 +36,9 @@ export default function Toolbar() {
             Settings
           </NavLink>
         </nav>
+        <button type="button" className="btn-tiny toolbar-logout" onClick={handleLogout}>
+          Sign out
+        </button>
       </div>
     </header>
   )
