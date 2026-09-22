@@ -99,3 +99,20 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **A CSS ordering bug caught while checking mobile responsiveness:** the mobile-only override for the visible preview pane (`position: static`, meant only for when it's open) was unscoped and, being later in the file, silently overrode the closed-state's `position: fixed` fix from earlier this session — reintroducing that exact bug (a wide, misplaced element) only on narrow viewports. A near-identical mistake recurred for the login page's own two-column-to-single-column mobile rule: it was placed *before* the base `.login-page`/`.login-art-side` rules in the file, so the later base rule won regardless of the media query. Same lesson twice in one sitting: a mobile override needs to come after the rule it's overriding in source order, not just be wrapped in a `@media` block — equal-specificity cascade doesn't care about media query nesting, only position in the file.
 
 **Tradeoff accepted:** One shared password, not per-user accounts — fine for a single-operator app, matching the no-multi-tenant model everywhere else. No password reset flow, no rate limiting on login attempts — acceptable for now given the small, known audience; would need hardening before this app is ever exposed more broadly (which is exactly why this is a stopgap, not the intended end state).
+
+---
+
+## D12: Every Deploy to `main` Needs a Manual CLI Push (Vercel Platform Quirk)
+
+**Decision (operational, not code):** Until this is resolved, pushing to `main` and letting Vercel's GitHub integration auto-deploy is **not reliable** — it fails with the same `exceeded_serverless_functions_per_deployment` error as the earlier 3-day incident (D-something above), even though the project is correctly at exactly 12 Functions + 1 Middleware. The fix each time is a manual `rm -rf .vercel/output && vercel build --yes --target production && vercel deploy --prebuilt --prod --yes` from a local machine.
+
+**What was actually verified, twice, right after shipping #48 and #49 (same commit, both times):**
+- GitHub-triggered deploy: fails. Build log shows `Restored build cache from previous deployment (<dpl-id>)`.
+- `vercel deploy --prod --force` (a *remote* build — source uploaded, Vercel's own infrastructure runs `vite build`/the function bundler): also fails, with the identical error, even though `--force` is documented to skip the build cache.
+- `vercel build` (runs `vite build` and the function bundler **locally**) + `vercel deploy --prebuilt --prod`: succeeds, every time, for the identical commit that just failed the other two ways.
+
+**Conclusion:** this isn't (just) a stale-cache problem — a supposedly cache-free remote build failed too. Something about how Vercel's own build machines execute the build/bundle step (for this project, at this function/middleware count) differs from running the identical build locally and uploading the result. Not root-caused further this session; flagging it plainly rather than guessing at a fix that can't be verified.
+
+**Practical impact:** after merging any PR to `main`, don't assume it's live — check `vercel ls` / the deployment's `readyState`, and if it's `ERROR` with this same `errorCode`, run the manual local-build-and-upload sequence above rather than retrying the git-triggered path (which has failed 100% of the time it's been tried since the function count first hit 12+1).
+
+**Tradeoff accepted:** An extra manual step after every merge to `main`, for as long as this is unresolved. Worth revisiting if it starts happening even with real headroom below 12 Functions (would suggest it's not actually about the count at all), or by asking Vercel support directly, or by moving to a Pro plan (removes the 12-Function ceiling this is all downstream of in the first place).
