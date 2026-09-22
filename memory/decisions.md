@@ -81,3 +81,21 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **Why:** Storing "overdue" as a real status would require a scheduled job (cron) to sweep and flip invoices as they cross their due date. Computing it at read time keeps the whole backend serverless with zero scheduled/background functions.
 
 **Tradeoff accepted:** None functionally — every place that displays or filters by status must remember to apply the computed-overdue check on top of the stored `sent` status, rather than being able to filter on a stored `overdue` value directly.
+
+---
+
+## D11: Basic Auth Gate via Edge Middleware (Stopgap Ahead of Google SSO)
+
+**Decision:** The whole app — every page and every `/api` route — is now gated behind a single shared username/password (username defaults to `DEFAULT_USERNAME`, matching the Blob storage folder name), enforced by `middleware.js` (Vercel Edge Middleware), not a Serverless Function. A custom two-column login page issues a stateless, HMAC-signed session cookie (Web Crypto, no session store) on success.
+
+*(Numbered D11, skipping D9/D10 — those exist on the not-yet-merged `feature/completion` branch — the optimistic concurrency guard and the per-year invoice split. Renumber if there's a collision once that branch merges.)*
+
+**Why:** The app started holding real confidential data (client PII, bank account numbers) with the D5-accepted "no auth" risk still in effect. Full Google SSO (tracked separately — see its own issue) is blocked on a Google Cloud OAuth Client that only the user can create; this closes the actual exposure immediately rather than leaving it open until that's set up.
+
+**Why Middleware, not a Serverless Function:** The project was already sitting at Vercel Hobby's 12-Serverless-Function ceiling (see the earlier function-count production incident). Confirmed empirically this session — a deployment with `middleware.js` present alongside the existing 12 Functions succeeds — that Edge Middleware is a genuinely separate quota/runtime, not counted against that cap. This means the whole auth gate, including the login/logout endpoints (handled directly inside middleware, never reaching a `/api` function), costs zero additional Functions.
+
+**A `vercel dev` quirk hit while building this, worth recording:** locally, `vercel dev` served a 200 response with an empty body (`Content-Length: 0`) for `/login` once middleware was added in front of the existing SPA rewrite — looked like a real bug in the code. It wasn't: a real preview deployment (real Vercel infrastructure, not the local emulator) served the page correctly. `vercel dev`'s middleware emulation has already proven unreliable once before this session (see the SPA-rewrite/white-screen incident); this is the same category of issue — verify anything middleware-related against a real deployment, not just local dev.
+
+**A CSS ordering bug caught while checking mobile responsiveness:** the mobile-only override for the visible preview pane (`position: static`, meant only for when it's open) was unscoped and, being later in the file, silently overrode the closed-state's `position: fixed` fix from earlier this session — reintroducing that exact bug (a wide, misplaced element) only on narrow viewports. A near-identical mistake recurred for the login page's own two-column-to-single-column mobile rule: it was placed *before* the base `.login-page`/`.login-art-side` rules in the file, so the later base rule won regardless of the media query. Same lesson twice in one sitting: a mobile override needs to come after the rule it's overriding in source order, not just be wrapped in a `@media` block — equal-specificity cascade doesn't care about media query nesting, only position in the file.
+
+**Tradeoff accepted:** One shared password, not per-user accounts — fine for a single-operator app, matching the no-multi-tenant model everywhere else. No password reset flow, no rate limiting on login attempts — acceptable for now given the small, known audience; would need hardening before this app is ever exposed more broadly (which is exactly why this is a stopgap, not the intended end state).

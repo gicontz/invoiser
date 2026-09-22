@@ -1014,10 +1014,22 @@ input, textarea, select {
   .sheet { padding: 20px; }
   .toolbar-inner { flex-direction: column; align-items: stretch; gap: 10px; }
   .toolbar-actions { justify-content: flex-end; }
+  .toolbar-nav { flex-wrap: wrap; row-gap: 6px; }
+  .toolbar-logout { align-self: flex-start; }
+
+  .editor-toolbar { flex-wrap: wrap; padding: 12px 16px; gap: 8px; }
+  .editor-toolbar .save-status { flex-basis: 100%; order: 3; }
 
   .app.preview-open { max-width: 100%; }
   .app.preview-open .app-body { display: block; }
-  .preview-pane {
+  /* :not(.preview-pane-closed) — this must never win over the closed-state
+     fixed positioning (styles.css ~L759), which keeps the iframe at a
+     real, consistent width off-screen for Print/PDF capture even while
+     visually hidden. Equal specificity + later in the cascade meant this
+     rule was overriding that on mobile, breaking it back to the
+     display:none-era bug that fix specifically solved (narrow/broken PDF
+     output) — this time only for viewports under 720px. */
+  .preview-pane:not(.preview-pane-closed) {
     position: static;
     max-height: none;
     margin: 0 0 40px;
@@ -1027,4 +1039,114 @@ input, textarea, select {
   .stat-grid { grid-template-columns: 1fr; }
   .list-row { grid-template-columns: 1fr; gap: 4px; }
   .list-row .amt { text-align: left; }
+
+}
+
+/* ---------- Login ---------- */
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(360px, 480px) 1fr;
+  background: var(--cream);
+}
+
+.login-form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.login-form-inner {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 40px;
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.login-subtitle {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  margin: 0 0 32px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-form label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 14px;
+}
+
+.login-form input {
+  padding: 12px 16px;
+  border-radius: var(--radius-field);
+  border: 1px solid rgba(38, 38, 58, 0.14);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  background: var(--white);
+}
+
+.login-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.login-error {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-field);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.login-submit {
+  margin-top: 24px;
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+.login-art-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lilac);
+  padding: 48px;
+}
+
+.login-art-side svg {
+  width: 100%;
+  max-width: 480px;
+}
+
+.toolbar-logout {
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-art-side { display: none; }
 }
