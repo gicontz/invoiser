@@ -23,3 +23,5 @@ Project-specific engineering knowledge for Invoiser. Patterns, conventions, and 
 **Also open:**
 - #5 — Migrate PDF/print export from `html2canvas` to a Playwright-rendered backend (deferred — would require adding a server, rejected for now to stay backend-free on that specific concern; now moot in spirit once the epics above add a backend anyway, but not yet revisited)
 - #8 — Polish: enforce the 15-group cap, a per-line character limit, and real multi-page pagination for Order Details beyond 2 pages
+- #37 — Pre-go-live: split `invoices.json` into per-year Blob files, so write latency/cost stops growing with a user's total invoice history
+- #38 — Pre-go-live: optimistic concurrency guard (`ifMatch`) on Blob writes, closing the read-modify-write race Epic #10 accepted as a risk
