@@ -1192,6 +1192,29 @@ input, textarea, select {
   font-size: 0.95rem;
 }
 
+.login-hint {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.login-mode-toggle {
+  margin-top: 18px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.login-mode-toggle:hover {
+  text-decoration: underline;
+}
+
 .login-art-side {
   display: flex;
   align-items: center;

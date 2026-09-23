@@ -1,10 +1,14 @@
 import { readUserData, writeUserData } from './_lib/storage.js'
 import { isOverdue } from './_lib/invoiceStatus.js'
 import { computeTotals } from '../src/utils/calc.js'
+import { getSessionUsername } from './_lib/session.js'
 
 export default async function handler(req, res) {
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   if (req.method === 'GET') {
-    const invoices = await readUserData('invoices')
+    const invoices = await readUserData('invoices', username)
     const { status } = req.query
     const withComputed = invoices.map((inv) => ({
       ...inv,
@@ -20,7 +24,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const invoices = await readUserData('invoices')
+    const invoices = await readUserData('invoices', username)
     const now = new Date().toISOString()
     const items = req.body?.items || []
     const totals = computeTotals(
@@ -62,7 +66,7 @@ export default async function handler(req, res) {
       cancelledAt: null,
     }
     invoices.push(invoice)
-    await writeUserData('invoices', invoices)
+    await writeUserData('invoices', invoices, username)
     return res.status(201).json(invoice)
   }
 

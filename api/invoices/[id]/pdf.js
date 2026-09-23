@@ -1,6 +1,7 @@
 import { readUserData } from '../../_lib/storage.js'
 import { renderInvoicePdfBuffer } from '../../_lib/renderInvoicePdf.js'
 import { computeTotals } from '../../../src/utils/calc.js'
+import { getSessionUsername } from '../../_lib/session.js'
 
 // Server-rendered PDF via Playwright (see _lib/renderInvoicePdf.js) — the
 // same real-Chromium pipeline already proven in production for email
@@ -16,10 +17,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   const { id } = req.query
   const [invoices, settings] = await Promise.all([
-    readUserData('invoices'),
-    readUserData('settings'),
+    readUserData('invoices', username),
+    readUserData('settings', username),
   ])
   const invoice = invoices.find((inv) => inv.id === id)
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })

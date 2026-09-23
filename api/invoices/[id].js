@@ -1,10 +1,14 @@
 import { readUserData, writeUserData } from '../_lib/storage.js'
 import { computeTotals } from '../../src/utils/calc.js'
 import { isOverdue } from '../_lib/invoiceStatus.js'
+import { getSessionUsername } from '../_lib/session.js'
 
 export default async function handler(req, res) {
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   const { id } = req.query
-  const invoices = await readUserData('invoices')
+  const invoices = await readUserData('invoices', username)
   const index = invoices.findIndex((inv) => inv.id === id)
 
   if (req.method === 'GET') {
@@ -24,7 +28,7 @@ export default async function handler(req, res) {
     updated.discount = totals.discount
     updated.total = totals.billed
     invoices[index] = updated
-    await writeUserData('invoices', invoices)
+    await writeUserData('invoices', invoices, username)
     return res.status(200).json({ ...updated, overdue: isOverdue(updated) })
   }
 
@@ -34,7 +38,7 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: 'Only draft invoices can be deleted — cancel instead' })
     }
     invoices.splice(index, 1)
-    await writeUserData('invoices', invoices)
+    await writeUserData('invoices', invoices, username)
     return res.status(204).end()
   }
 
