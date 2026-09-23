@@ -1,9 +1,8 @@
 import { put, get } from '@vercel/blob'
 
-// Single fixed user for now — no auth yet (see memory/decisions.md D5).
-// Multi-user later is just resolving a real username from a session instead
-// of this env var; nothing else in this module changes.
-const DEFAULT_USERNAME = process.env.DEFAULT_USERNAME || 'default'
+// Every caller resolves the real username from the session cookie (see
+// _lib/session.js) — this module no longer has a notion of a default user
+// (see memory/decisions.md D5, superseded by D13: real multi-user accounts).
 
 // First-run bootstrap: a resource that doesn't exist yet reads back as this,
 // not an error.
@@ -22,7 +21,7 @@ function blobPath(resource, username) {
 // storage. useCache: false always reads from origin, never a CDN-cached
 // copy — required for a read-modify-write pattern where we can't afford to
 // act on stale data (see memory/decisions.md D4).
-export async function readUserData(resource, username = DEFAULT_USERNAME) {
+export async function readUserData(resource, username) {
   const pathname = blobPath(resource, username)
   const result = await get(pathname, { access: 'private', useCache: false })
   if (!result) {
@@ -35,7 +34,7 @@ export async function readUserData(resource, username = DEFAULT_USERNAME) {
 // Overwrites one user resource wholesale. addRandomSuffix: false +
 // allowOverwrite: true keep the path stable across writes — this is a
 // flat file, not a new upload each time.
-export async function writeUserData(resource, data, username = DEFAULT_USERNAME) {
+export async function writeUserData(resource, data, username) {
   const pathname = blobPath(resource, username)
   await put(pathname, JSON.stringify(data, null, 2), {
     access: 'private',

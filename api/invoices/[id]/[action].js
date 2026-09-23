@@ -1,4 +1,5 @@
 import { readUserData, writeUserData } from '../../_lib/storage.js'
+import { getSessionUsername } from '../../_lib/session.js'
 
 // Merges what used to be two separate function files (status.js,
 // payments.js) into one dynamic route (still serving the exact same URLs,
@@ -17,13 +18,13 @@ const ALLOWED_FROM = {
   cancelled: ['draft', 'sent'],
 }
 
-async function handleStatus(req, res, id) {
+async function handleStatus(req, res, id, username) {
   const { status } = req.body || {}
   if (!ALLOWED_FROM[status]) {
     return res.status(400).json({ error: `status must be one of: ${Object.keys(ALLOWED_FROM).join(', ')}` })
   }
 
-  const invoices = await readUserData('invoices')
+  const invoices = await readUserData('invoices', username)
   const index = invoices.findIndex((inv) => inv.id === id)
   if (index === -1) return res.status(404).json({ error: 'Invoice not found' })
 
@@ -38,13 +39,13 @@ async function handleStatus(req, res, id) {
   if (status === 'sent') invoice.sentAt = now
   if (status === 'cancelled') invoice.cancelledAt = now
 
-  await writeUserData('invoices', invoices)
+  await writeUserData('invoices', invoices, username)
   return res.status(200).json(invoice)
 }
 
 // Manual ledger entry, not a payment gateway (memory/decisions.md D7).
 // Auto-flips to 'paid' once payments cover the total.
-async function handlePayments(req, res, id) {
+async function handlePayments(req, res, id, username) {
   const { amount, receivedAt, note } = req.body || {}
   const parsedAmount = parseFloat(amount)
   if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -54,7 +55,7 @@ async function handlePayments(req, res, id) {
     return res.status(400).json({ error: 'receivedAt is required' })
   }
 
-  const invoices = await readUserData('invoices')
+  const invoices = await readUserData('invoices', username)
   const index = invoices.findIndex((inv) => inv.id === id)
   if (index === -1) return res.status(404).json({ error: 'Invoice not found' })
 
@@ -74,7 +75,7 @@ async function handlePayments(req, res, id) {
   }
   invoice.updatedAt = new Date().toISOString()
 
-  await writeUserData('invoices', invoices)
+  await writeUserData('invoices', invoices, username)
   return res.status(201).json(invoice)
 }
 
@@ -84,8 +85,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   const { id, action } = req.query
-  if (action === 'status') return handleStatus(req, res, id)
-  if (action === 'payments') return handlePayments(req, res, id)
+  if (action === 'status') return handleStatus(req, res, id, username)
+  if (action === 'payments') return handlePayments(req, res, id, username)
   return res.status(404).json({ error: 'Not found' })
 }

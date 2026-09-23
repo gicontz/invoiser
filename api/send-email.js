@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer'
 import { readUserData } from './_lib/storage.js'
 import { renderEmailHtml } from './_lib/renderEmailHtml.js'
+import { getSessionUsername } from './_lib/session.js'
 
 // Gmail sending path (issue #27) — env vars, not per-instance Settings.
 // Temporarily enabled in this production deployment too: this is currently
@@ -28,14 +29,17 @@ export default async function handler(req, res) {
     return res.status(501).json({ error: 'Email sending is not configured on this instance' })
   }
 
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   const { invoiceId, to, cc, bcc, subject, body } = req.body || {}
   if (!invoiceId || !to) {
     return res.status(400).json({ error: 'invoiceId and to are required' })
   }
 
   const [invoices, settings] = await Promise.all([
-    readUserData('invoices'),
-    readUserData('settings'),
+    readUserData('invoices', username),
+    readUserData('settings', username),
   ])
   const invoice = invoices.find((inv) => inv.id === invoiceId)
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
@@ -45,7 +49,9 @@ export default async function handler(req, res) {
   let pdfBuffer
   try {
     const proto = req.headers['x-forwarded-proto'] || (req.headers.host?.includes('localhost') ? 'http' : 'https')
-    const pdfRes = await fetch(`${proto}://${req.headers.host}/api/invoices/${invoiceId}/pdf`)
+    const pdfRes = await fetch(`${proto}://${req.headers.host}/api/invoices/${invoiceId}/pdf`, {
+      headers: { cookie: req.headers.cookie || '' },
+    })
     if (!pdfRes.ok) throw new Error(`PDF endpoint returned ${pdfRes.status}`)
     pdfBuffer = Buffer.from(await pdfRes.arrayBuffer())
   } catch (error) {
