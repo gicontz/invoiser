@@ -45,7 +45,12 @@ export default async function handler(req, res) {
   let pdfBuffer
   try {
     const proto = req.headers['x-forwarded-proto'] || (req.headers.host?.includes('localhost') ? 'http' : 'https')
-    const pdfRes = await fetch(`${proto}://${req.headers.host}/api/invoices/${invoiceId}/pdf`)
+    // This server-to-server hop goes through middleware.js's auth gate like
+    // any other request, and doesn't inherit the caller's session — forward
+    // the cookie explicitly or it 401s (see memory/decisions.md D16).
+    const pdfRes = await fetch(`${proto}://${req.headers.host}/api/invoices/${invoiceId}/pdf`, {
+      headers: { cookie: req.headers.cookie || '' },
+    })
     if (!pdfRes.ok) throw new Error(`PDF endpoint returned ${pdfRes.status}`)
     pdfBuffer = Buffer.from(await pdfRes.arrayBuffer())
   } catch (error) {

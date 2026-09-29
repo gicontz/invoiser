@@ -146,3 +146,15 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **Verified:** reproduced the exact bug against a real preview deployment (headless browser, both entry points, full network log) before fixing, then confirmed both entry points now `POST /api/invoices` successfully and the editor loads with the default bank account's fields pre-filled.
 
 **Tradeoff accepted:** None — this is a straightforward bug fix, not a design tradeoff. The lesson worth keeping: a dynamic route (`:id`) that needs to also handle a magic literal value (`'new'`) should never coexist with a separate static route for that same literal — write the special case in the component, not as a competing route.
+
+---
+
+## D16: Internal Server-to-Server Fetches Must Forward the Session Cookie
+
+**Decision:** `api/send-email.js`'s internal `fetch` of `/api/invoices/:id/pdf` explicitly forwards the caller's `cookie` header.
+
+**Why:** that hop is a real HTTP request to the same deployment, so it passes through `middleware.js`'s auth gate (D11) like any browser request — but it doesn't inherit the caller's session. Since D11 shipped, every send returned `PDF endpoint returned 401` (confirmed in production logs), `send-email.js` returned 500, and the editor silently fell back to opening the local mail app. Email "regressed" because the auth gate was added after email sending was built and tested; nothing re-tested sending end-to-end afterward. (An earlier investigation wrongly concluded it worked, because its test request went through `vercel curl`, not a real browser session on the production alias.)
+
+**Also fixed:** the mailto: fallback built its query with `URLSearchParams`, which encodes spaces as `+` — mail apps show those literally ("Invoice+EMB-0002+from..."). Now uses `encodeURIComponent` (`%20`).
+
+**Rule going forward:** any new internal `fetch` to this app's own `/api/*` routes must forward `req.headers.cookie`, and any change to `middleware.js` must be followed by an end-to-end email send test from a real browser session.

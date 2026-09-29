@@ -352,12 +352,13 @@ export default function InvoiceEditorPage() {
     } catch {
       return
     }
-    const params = new URLSearchParams()
-    if (cc) params.set('cc', cc)
-    if (bcc) params.set('bcc', bcc)
-    if (subject) params.set('subject', subject)
-    if (body) params.set('body', body)
-    const mailto = `mailto:${encodeURIComponent(to)}?${params.toString()}`
+    // Not URLSearchParams: it encodes spaces as "+", which mail apps show
+    // literally in mailto: links. encodeURIComponent uses %20.
+    const query = Object.entries({ cc, bcc, subject, body })
+      .filter(([, value]) => value)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join('&')
+    const mailto = `mailto:${encodeURIComponent(to)}?${query}`
     window.location.href = mailto
     setEmailModalOpen(false)
     enqueueSnackbar('Mail client opened', { variant: 'success' })
