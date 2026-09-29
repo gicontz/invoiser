@@ -24,14 +24,11 @@ export default function InvoicesListPage() {
 
   useEffect(load, [])
 
-  const handleNewInvoice = async () => {
-    try {
-      const invoice = await api.createInvoice({})
-      navigate(`/invoices/${invoice.id}`)
-    } catch {
-      enqueueSnackbar('Could not create a new invoice', { variant: 'error' })
-    }
-  }
+  // Creation itself (including attaching the default bank account/
+  // signature) is InvoiceEditorPage's job, triggered by the literal id
+  // "new" — see memory/decisions.md D15. Calling api.createInvoice directly
+  // here used to skip that defaulting logic entirely.
+  const handleNewInvoice = () => navigate('/invoices/new')
 
   const handleMarkSent = async (id) => {
     try {
