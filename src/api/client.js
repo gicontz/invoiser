@@ -47,6 +47,14 @@ export const api = {
   getDashboard: () => request('/dashboard'),
 
   sendEmail: (data) => request('/send-email', { method: 'POST', body: JSON.stringify(data) }),
+  // Acknowledgement Receipt (issue #52): same function, documentType discriminator.
+  sendReceipt: (data) => request('/send-email', { method: 'POST', body: JSON.stringify({ ...data, documentType: 'receipt' }) }),
+  // Raw Response (a PDF, not JSON) — callers check res.ok and read the blob.
+  fetchReceiptPdf: (id, options) => fetch(`${BASE}/invoices/${id}/pdf?type=receipt`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options),
+  }),
 
   logout: () => fetch('/api/auth/logout', { method: 'POST' }),
 }

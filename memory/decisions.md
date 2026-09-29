@@ -176,3 +176,20 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **Also fixed:** the mailto: fallback built its query with `URLSearchParams`, which encodes spaces as `+` — mail apps show those literally ("Invoice+EMB-0002+from..."). Now uses `encodeURIComponent` (`%20`).
 
 **Rule going forward:** any new internal `fetch` to this app's own `/api/*` routes must forward `req.headers.cookie`, and any change to `middleware.js` must be followed by an end-to-end email send test from a real browser session.
+
+---
+
+## D17: Acknowledgement Receipt Folds Into Existing Functions — `?type=receipt` + `documentType`, Not New Routes
+
+**Decision:** The optional Acknowledgement Receipt (AR, issue #52) — sendable only once an invoice is `paid` — adds **zero** Serverless Functions. Its PDF is `api/invoices/[id]/pdf.js?type=receipt` (GET with query params, or POST with a JSON body for long edited wording), and sending it is `api/send-email.js` with `documentType: 'receipt'` (plus `designId`, `receiptMessage`, `issuedDate`). The receipt document is a sibling HTML-string renderer, `src/designs/receiptTemplates.js#renderReceiptBody`, wrapped in the same `document.css`/`themes.css` shell and `[data-design]` themes as the invoice (D1). It has a browser twin (`src/designs/index.js#renderReceiptHtml`, used for the modal's live preview) and a server twin (`api/_lib/renderInvoiceHtml.js#renderReceiptHtml`, used for the Playwright PDF). There is no separate template system.
+
+**Why:** the project sits at exactly 12 Functions on Hobby. One more `api/*.js` file fails every deploy (`exceeded_serverless_functions_per_deployment`), which is how the earlier 3-day outage happened. A query/body discriminator on the two functions that already own "render a PDF" and "send an email" costs nothing, and it keeps D16's cookie-forwarding internal hop as the one path. Verified after the change: `vercel build` still emits exactly 12 `.func` dirs under `.vercel/output/functions/api` (plus middleware).
+
+**Smaller calls made alongside:**
+- **Real interpolated default wording, not tokens.** It covers biller, amount received, client, payment date(s) and invoice number, and the user edits the rendered text. This follows the invoice email's `defaultBody` precedent. The builders are pure functions with `node:test` coverage (`npm test`, `test/receipt.test.js`), which is this repo's first test setup.
+- **The design defaults to the invoice's own `selectedDesignId`.** The modal's chip picker overrides it for this receipt only, and the invoice itself is never changed.
+- **Amount received = the sum of the payments ledger (D7).** Every payment is listed with its date. Payment notes are treated as internal and never printed. The "paid" date is the latest payment.
+- **`receiptSentAt` is stamped by `send-email.js` only after a successful SMTP send.** The stamp re-reads invoices first, so a stale snapshot can't clobber edits made during the multi-second render, and a stamp failure never turns a sent email into an error. Re-sending is allowed and the stamp just moves. The mailto: fallback does not stamp, because the app can't know the user actually sent it, which matches how the invoice email fallback doesn't mark anything either. `PATCH /api/invoices/:id` ignores `receiptSentAt` in its body, just as it ignores `status`/`payments`.
+- **The server enforces `status === 'paid'`** in both functions (409), not just the UI.
+
+**Tradeoff accepted:** two render paths (`renderInvoiceBody`/`renderReceiptBody`) now share one CSS shell, so a theme change needs checking against both, which is the same class of drift risk D3 describes. Building this also surfaced a pre-existing Flat-theme bug that hit invoices too: the grand-total row rendered grey-on-cobalt, because `.preview-totals > div` out-ranked `.preview-grand-total`. It's now fixed in `themes.css`, and `.preview-totals > div` gained a `gap` so a long label can't run into its amount.

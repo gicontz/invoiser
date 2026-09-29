@@ -11,7 +11,7 @@ function escapeHtml(value) {
 // font/stylesheet loading: most email clients (Outlook especially) don't
 // support either, so this degrades to plain system fonts rather than
 // relying on Fredoka/Nunito actually being available.
-export function renderEmailHtml({ billerName, bodyText }) {
+export function renderEmailHtml({ billerName, bodyText, attachmentLabel = 'Invoice PDF attached' }) {
   const paragraphs = escapeHtml(bodyText).split(/\n{2,}/).map((block) =>
     `<p style="margin:0 0 16px; white-space:pre-line;">${block}</p>`,
   ).join('')
@@ -24,7 +24,7 @@ export function renderEmailHtml({ billerName, bodyText }) {
     <p style="margin:0 0 24px; font-size:15px; font-weight:800; color:#1F3A5F; letter-spacing:0.01em;">🧾 ${escapeHtml(billerName || 'Invoiser')}</p>
     <div style="font-size:15px; line-height:1.6; color:#26263A;">${paragraphs}</div>
     <hr style="border:none; border-top:1px solid rgba(38,38,58,0.1); margin:24px 0;">
-    <p style="margin:0; font-size:13px; color:#63607A;">📎 Invoice PDF attached</p>
+    <p style="margin:0; font-size:13px; color:#63607A;">📎 ${escapeHtml(attachmentLabel)}</p>
   </div>
 </body>
 </html>`

@@ -21,6 +21,7 @@ import Skeleton from '../components/Skeleton.jsx'
 import AsyncButton from '../components/AsyncButton.jsx'
 import { DEFAULT_DESIGN_ID, renderInvoiceHtml } from '../designs/index.js'
 import { formatDate } from '../designs/templates.js'
+import { buildMailtoUrl, downloadResponse } from '../utils/mailto.js'
 
 const emptyBiller = { name: '', address: '', email: '', phone: '' }
 const emptyClient = { name: '', address: '', email: '', phone: '' }
@@ -316,13 +317,7 @@ export default function InvoiceEditorPage() {
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/pdf`)
       if (!res.ok) throw new Error('Could not generate the PDF')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${meta.invoiceNumber || 'invoice'}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
+      await downloadResponse(res, `${meta.invoiceNumber || 'invoice'}.pdf`)
       enqueueSnackbar('PDF downloaded', { variant: 'success' })
     } catch {
       enqueueSnackbar('Could not generate the PDF', { variant: 'error' })
@@ -352,14 +347,7 @@ export default function InvoiceEditorPage() {
     } catch {
       return
     }
-    // Not URLSearchParams: it encodes spaces as "+", which mail apps show
-    // literally in mailto: links. encodeURIComponent uses %20.
-    const query = Object.entries({ cc, bcc, subject, body })
-      .filter(([, value]) => value)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-      .join('&')
-    const mailto = `mailto:${encodeURIComponent(to)}?${query}`
-    window.location.href = mailto
+    window.location.href = buildMailtoUrl({ to, cc, bcc, subject, body })
     setEmailModalOpen(false)
     enqueueSnackbar('Mail client opened', { variant: 'success' })
   }

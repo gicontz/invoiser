@@ -64,6 +64,7 @@ export default async function handler(req, res) {
       updatedAt: now,
       sentAt: null,
       cancelledAt: null,
+      receiptSentAt: null,
     }
     invoices.push(invoice)
     await writeUserData('invoices', invoices, username)

@@ -1236,3 +1236,131 @@ input, textarea, select {
   .login-page { grid-template-columns: 1fr; }
   .login-art-side { display: none; }
 }
+
+/* ---------- Acknowledgement Receipt modal (ReceiptModal.jsx, issue #52) ----------
+   EmailModal's fields + a live preview column. Kept at the end of the file
+   so the mobile override below comes after the rules it overrides. */
+.modal-xwide {
+  max-width: 980px;
+}
+
+.modal-fields {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.modal-body-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 344px;
+  gap: 20px;
+  align-items: start;
+}
+
+.modal-footer-extra {
+  margin-right: auto;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 10px 0 6px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.field-label-row label {
+  margin: 0 0 4px !important;
+}
+
+.design-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.design-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(38, 38, 58, 0.12);
+  background: var(--white);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.design-chip:hover { color: var(--ink); border-color: rgba(38, 38, 58, 0.24); }
+
+.design-chip.selected {
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.design-chip-swatches {
+  display: inline-flex;
+}
+
+.design-chip-swatches span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(38, 38, 58, 0.15);
+  margin-left: -3px;
+}
+
+.design-chip-swatches span:first-child { margin-left: 0; }
+
+.receipt-preview {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receipt-preview-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* The receipt document is laid out at its real ~830px width, then scaled
+   down, so the preview matches the PDF instead of reflowing narrower. */
+.receipt-preview-frame {
+  width: 344px;
+  height: 488px;
+  overflow: hidden;
+  border-radius: var(--radius-field);
+  background: #f4f5f7;
+  border: 1px solid rgba(38, 38, 58, 0.08);
+}
+
+.receipt-preview-frame iframe {
+  width: 830px;
+  height: 1178px;
+  border: 0;
+  transform: scale(0.4145);
+  transform-origin: 0 0;
+}
+
+@media (max-width: 720px) {
+  .modal-body-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .receipt-preview {
+    position: static;
+    align-items: center;
+  }
+}
