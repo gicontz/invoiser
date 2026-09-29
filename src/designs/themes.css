@@ -92,6 +92,11 @@
   color: var(--m-ink-soft);
 }
 
+[data-design="pastel"] .receipt-title {
+  font-family: "Quicksand", sans-serif;
+  color: var(--m-accent);
+}
+
 /* ============================ Elegant ============================= */
 [data-design="elegant"] {
   --m-bg: #f7f4ec;
@@ -176,6 +181,18 @@
   font-style: italic;
 }
 
+[data-design="elegant"] .receipt-title {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 2rem;
+}
+
+[data-design="elegant"] .receipt-message {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+}
+
 /* ============================== Flat =============================== */
 [data-design="flat"] {
   --m-bg: #ffffff;
@@ -247,6 +264,21 @@
   margin-right: 32px;
 }
 
+[data-design="flat"] .receipt-title,
+[data-design="flat"] .receipt-message {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+[data-design="flat"] .receipt-title {
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--m-accent);
+}
+
+[data-design="flat"] .receipt-payments {
+  margin-left: 32px;
+}
+
 [data-design="flat"] .order-details {
   padding-left: 32px;
   padding-right: 32px;
@@ -289,7 +321,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-[data-design="flat"] .preview-grand-total {
+[data-design="flat"] .preview-totals > .preview-grand-total {
   background: var(--m-accent);
   color: #fff;
   border-top: none;

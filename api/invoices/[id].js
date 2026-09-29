@@ -18,9 +18,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'PATCH') {
     if (index === -1) return res.status(404).json({ error: 'Invoice not found' })
-    // status/payments have their own dedicated endpoints — never overwritten
+    // status/payments/receiptSentAt are owned by their own endpoints — never overwritten
     // by a plain content edit.
-    const { status: _status, payments: _payments, ...editable } = req.body || {}
+    const { status: _status, payments: _payments, receiptSentAt: _receiptSentAt, ...editable } = req.body || {}
     const updated = { ...invoices[index], ...editable, id, updatedAt: new Date().toISOString() }
     const totals = computeTotals(updated.items, updated.taxPercent, updated.discountAmount, updated.capAmount)
     updated.subtotal = totals.subtotal

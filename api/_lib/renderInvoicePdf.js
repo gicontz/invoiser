@@ -1,7 +1,7 @@
 import os from 'node:os'
 import { chromium as playwright } from 'playwright-core'
 import chromium from '@sparticuz/chromium'
-import { renderInvoiceHtml } from './renderInvoiceHtml.js'
+import { renderInvoiceHtml, renderReceiptHtml } from './renderInvoiceHtml.js'
 
 // @sparticuz/chromium ships a Linux-only binary (it's built for Lambda-style
 // serverless runtimes, which is what Vercel Functions run on in production).
@@ -14,8 +14,15 @@ const isLinux = os.platform() === 'linux'
 // outgoing email and let it fall out of scope once the response is sent;
 // there is deliberately no caching or persistence step here.
 export async function renderInvoicePdfBuffer(designId, invoiceData) {
-  const html = renderInvoiceHtml(designId, invoiceData)
+  return renderHtmlToPdfBuffer(renderInvoiceHtml(designId, invoiceData))
+}
 
+// Acknowledgement Receipt (issue #52) — same browser pipeline, receipt HTML.
+export async function renderReceiptPdfBuffer(receipt) {
+  return renderHtmlToPdfBuffer(renderReceiptHtml(receipt))
+}
+
+async function renderHtmlToPdfBuffer(html) {
   const browser = await playwright.launch({
     args: isLinux ? chromium.args : [],
     executablePath: isLinux ? await chromium.executablePath() : playwright.executablePath(),

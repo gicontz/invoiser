@@ -9,11 +9,17 @@ import ErrorCard from '../components/ErrorCard.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import RecordPaymentModal from '../components/RecordPaymentModal.jsx'
 import AsyncButton from '../components/AsyncButton.jsx'
+import ReceiptModal from '../components/ReceiptModal.jsx'
+import { useLocalStorage } from '../hooks/useLocalStorage.js'
 
 export default function InvoicesListPage() {
   const navigate = useNavigate()
   const [state, setState] = useState({ status: 'loading', invoices: [], error: null })
   const [paymentTarget, setPaymentTarget] = useState(null)
+  // { invoice, biller } — the biller (settings) is fetched on open, since
+  // the receipt's letterhead and default wording need it.
+  const [receiptTarget, setReceiptTarget] = useState(null)
+  const [addressBook] = useLocalStorage('invoiser_address_book', [])
 
   const load = () => {
     setState((prev) => ({ ...prev, status: 'loading', error: null }))
@@ -72,6 +78,20 @@ export default function InvoicesListPage() {
     }
   }
 
+  const handleOpenReceipt = async (invoice) => {
+    try {
+      const settings = await api.getSettings()
+      setReceiptTarget({ invoice, biller: settings.biller || {} })
+    } catch (error) {
+      enqueueSnackbar(error.message || 'Could not load your business details', { variant: 'error' })
+    }
+  }
+
+  const handleReceiptSent = () => {
+    setReceiptTarget(null)
+    load()
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -113,6 +133,16 @@ export default function InvoicesListPage() {
                       <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
                     </>
                   )}
+                  {/* Optional, and only once fully paid (issue #52). */}
+                  {inv.status === 'paid' && (
+                    <AsyncButton
+                      className="btn-tiny"
+                      onClick={() => handleOpenReceipt(inv)}
+                      title={inv.receiptSentAt ? `Receipt sent ${new Date(inv.receiptSentAt).toLocaleDateString()}` : undefined}
+                    >
+                      {inv.receiptSentAt ? 'Resend Receipt' : 'Send Receipt'}
+                    </AsyncButton>
+                  )}
                   {inv.status === 'draft' && (
                     <>
                       <AsyncButton className="btn-tiny" onClick={() => handleCancel(inv.id)}>Cancel</AsyncButton>
@@ -131,6 +161,16 @@ export default function InvoicesListPage() {
           invoice={paymentTarget}
           onClose={() => setPaymentTarget(null)}
           onSubmit={handleRecordPayment}
+        />
+      )}
+
+      {receiptTarget && (
+        <ReceiptModal
+          invoice={receiptTarget.invoice}
+          biller={receiptTarget.biller}
+          addressBook={addressBook}
+          onClose={() => setReceiptTarget(null)}
+          onSent={handleReceiptSent}
         />
       )}
     </div>

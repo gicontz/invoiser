@@ -1,4 +1,5 @@
 import { renderInvoiceBody } from './templates.js'
+import { renderReceiptBody } from './receiptTemplates.js'
 import documentCss from './document.css?raw'
 import themesCss from './themes.css?raw'
 
@@ -47,7 +48,18 @@ const FONTS_IMPORT =
 // and — via the Node-safe twin api/_lib/renderInvoiceHtml.js — what gets
 // rendered to a PDF for download/email (see api/_lib/renderInvoicePdf.js).
 export function renderInvoiceHtml(designId, data) {
-  const body = renderInvoiceBody({ designId, ...data })
+  return wrapDocument(renderInvoiceBody({ designId, ...data }))
+}
+
+// Acknowledgement Receipt (issue #52) — same shell and [data-design] CSS as
+// the invoice, so a receipt matches the letterhead of the invoice it
+// acknowledges. `receipt` comes from receiptTemplates.js#buildReceiptData.
+// Server twin: api/_lib/renderInvoiceHtml.js#renderReceiptHtml.
+export function renderReceiptHtml(receipt) {
+  return wrapDocument(renderReceiptBody(receipt))
+}
+
+function wrapDocument(body) {
   return `<!DOCTYPE html>
 <html>
 <head>

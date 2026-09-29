@@ -145,10 +145,10 @@ function renderOrderDetailsPage(groups, currency, meta, totalPages) {
   </div>`
 }
 
-function renderSignatureBlock(signature, signatoryName) {
+export function renderSignatureBlock(signature, signatoryName) {
   if (!signature && !signatoryName) return ''
   return `<div class="doc-signature">
-    ${signature ? `<img src="${signature}" alt="Signature" class="doc-signature-img" />` : '<div class="doc-signature-blank"></div>'}
+    ${signature ? `<img src="${escapeHtml(signature)}" alt="Signature" class="doc-signature-img" />` : '<div class="doc-signature-blank"></div>'}
     <div class="doc-signature-line"></div>
     ${signatoryName ? `<p class="doc-signatory-name">${escapeHtml(signatoryName)}</p>` : ''}
     <p class="doc-signatory-label">Authorized Signatory</p>
