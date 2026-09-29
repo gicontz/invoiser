@@ -1,4 +1,5 @@
 import { readUserData, writeUserData } from '../_lib/storage.js'
+import { getSessionUsername } from '../_lib/session.js'
 
 // Payments are embedded per-invoice (memory/decisions.md D7), so undoing one
 // means finding which invoice holds it.
@@ -8,8 +9,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
   const { id } = req.query
-  const invoices = await readUserData('invoices')
+  const invoices = await readUserData('invoices', username)
   const invoiceIndex = invoices.findIndex((inv) => (inv.payments || []).some((p) => p.id === id))
   if (invoiceIndex === -1) return res.status(404).json({ error: 'Payment not found' })
 
@@ -22,6 +26,6 @@ export default async function handler(req, res) {
   }
   invoice.updatedAt = new Date().toISOString()
 
-  await writeUserData('invoices', invoices)
+  await writeUserData('invoices', invoices, username)
   return res.status(200).json(invoice)
 }

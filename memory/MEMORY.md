@@ -5,7 +5,7 @@ Project-specific engineering knowledge for Invoiser. Patterns, conventions, and 
 ## Canonical Memory
 
 - [Engineering](engineering.md) — print/PDF architecture patterns, date-parsing gotchas, serverless-backend constraints, anti-patterns
-- [Decisions](decisions.md) — durable project decisions with context and tradeoffs (template architecture, iframe-based print, Vercel Blob over a DB, no auth, full editor migration, ledger-not-gateway payments, computed-overdue)
+- [Decisions](decisions.md) — durable project decisions with context and tradeoffs (template architecture, iframe-based print, Vercel Blob over a DB, full editor migration, ledger-not-gateway payments, computed-overdue, Edge Middleware auth gate, multi-user accounts in a separate private Blob store)
 
 ## Current State (as of 2026-09-20)
 

@@ -1,5 +1,6 @@
 import { readUserData } from './_lib/storage.js'
 import { isOverdue } from './_lib/invoiceStatus.js'
+import { getSessionUsername } from './_lib/session.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,7 +8,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const invoices = await readUserData('invoices')
+  const username = await getSessionUsername(req)
+  if (!username) return res.status(401).json({ error: 'Not authenticated' })
+
+  const invoices = await readUserData('invoices', username)
   const active = invoices.filter((inv) => inv.status !== 'cancelled')
 
   const totalInvoiced = active.reduce((sum, inv) => sum + (inv.total || 0), 0)
