@@ -130,3 +130,19 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 **Verified:** confirmed the failure via real production logs (not guessed), reproduced the fix on a preview deployment (`vercel build` → patch script → `vercel deploy --prebuilt`) and downloaded a real 2-page PDF back, before touching production.
 
 **Tradeoff accepted:** One more required step in the D12 manual deploy sequence, for as long as this key stays unsupported by `vercel deploy`'s validator — `vercel build --yes && node scripts/fix-pdf-architecture.mjs && vercel deploy --prebuilt --prod --yes`. If Vercel's schema validator is updated to accept `architecture` in `vercel.json`, this script can be deleted in favor of the (already-written, currently-rejected) `vercel.json` config — worth periodically retrying.
+
+---
+
+## D15: One Route for "New Invoice", Not a Separate `/invoices/new`
+
+**Decision:** `/invoices/:id` is the only route for the invoice editor. There is no separate `<Route path="/invoices/new">`. `InvoiceEditorPage` treats the literal id `"new"` as a signal to create the invoice (with defaults) first, then redirect to the real id.
+
+**Why this was broken:** `App.jsx` had *both* `<Route path="/invoices/new">` and `<Route path="/invoices/:id">`. React Router ranks a static path segment above a dynamic one, so `/invoices/new` always matched the static route — which rendered `InvoiceEditorPage` with `useParams().id === undefined`, never `'new'`. That silently skipped the component's entire "create with defaults" branch: it fell into the `else` (load-existing-invoice) path, called `GET /api/invoices/undefined`, got a 404, and showed "Couldn't load this invoice." **Every invoice created from the Dashboard's "+ New Invoice" link was completely broken**, not just missing defaults.
+
+**The second, compounding bug:** `InvoicesListPage`'s own "+ New Invoice" button didn't hit that broken route at all — it called `api.createInvoice({})` directly with an empty payload and navigated straight to the resulting id, entirely bypassing `InvoiceEditorPage`'s default-bank logic. This is why invoices created from the Invoices List looked like they "worked" but never got a bank account or signature attached: there were two independent creation code paths, and only one of them (the broken one) had the defaulting logic.
+
+**Fix:** deleted the shadowing static route so `/invoices/new` correctly reaches `InvoiceEditorPage` with `id === 'new'`; deleted `InvoicesListPage`'s duplicate direct-`createInvoice` call in favor of just navigating to `/invoices/new` and letting the one real creation path handle it. Also added `signature: signatureDefault` to that path's `createInvoice` payload — previously only the default bank account was attached at creation; the signature default existed in local state but was never sent to the server until the next autosave (a client-only default in `useLocalStorage`, not server-side, is a separate known scoping — see the multi-user signup work for why this may eventually need to move server-side per-account).
+
+**Verified:** reproduced the exact bug against a real preview deployment (headless browser, both entry points, full network log) before fixing, then confirmed both entry points now `POST /api/invoices` successfully and the editor loads with the default bank account's fields pre-filled.
+
+**Tradeoff accepted:** None — this is a straightforward bug fix, not a design tradeoff. The lesson worth keeping: a dynamic route (`:id`) that needs to also handle a magic literal value (`'new'`) should never coexist with a separate static route for that same literal — write the special case in the component, not as a competing route.

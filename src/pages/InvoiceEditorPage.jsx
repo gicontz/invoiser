@@ -107,6 +107,8 @@ export default function InvoiceEditorPage() {
           invoiceDate: todayIso(),
           bank: defaultBank ? { ...emptyBank, ...defaultBank } : null,
           bankAccountId: defaultBank?.id || null,
+          signature: signatureDefault || null,
+          sameAsBusiness: true,
         })
       } else {
         invoice = await api.getInvoice(id)
