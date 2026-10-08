@@ -193,3 +193,11 @@ Durable project-specific engineering decisions. Include context and the tradeoff
 - **The server enforces `status === 'paid'`** in both functions (409), not just the UI.
 
 **Tradeoff accepted:** two render paths (`renderInvoiceBody`/`renderReceiptBody`) now share one CSS shell, so a theme change needs checking against both, which is the same class of drift risk D3 describes. Building this also surfaced a pre-existing Flat-theme bug that hit invoices too: the grand-total row rendered grey-on-cobalt, because `.preview-totals > div` out-ranked `.preview-grand-total`. It's now fixed in `themes.css`, and `.preview-totals > div` gained a `gap` so a long label can't run into its amount.
+
+## D18: Invoiser Branding Watermark Lives in the Body Renderers, Always On (for Now)
+
+**Decision:** Every `.doc-page` of an invoice (incl. the Order Details page) and of an Acknowledgement Receipt carries a faint, rotated "Created with Invoiser" watermark (issue #57). `templates.js#renderWatermark()` emits it, and both `renderInvoiceBody` and `renderReceiptBody` call it. The CSS is in `document.css`. It isn't configurable yet. Removing it (a paid tier, or a Settings toggle) is left for later, alongside the ads work in #56.
+
+**Why:** the body renderers are the one place shared by the browser wrapper (`src/designs/index.js`) and the server twin (`api/_lib/renderInvoiceHtml.js`). So the preview iframe, print and the Playwright PDF can't drift (D1/D2), and no Serverless Function is added (D17's 12-function ceiling). `.doc-page` gets `isolation: isolate`, so the watermark's `z-index: -1` paints above each theme's paper background but under all content. Totals, the Flat header band and amounts always sit on top of it. It's `position: absolute` and clipped (`overflow: hidden`), so it doesn't affect the flex layout or page count.
+
+**Tradeoff accepted:** branding on a document the user sends to their own client. Opacity is kept at 0.08 so it reads as a mark, not a stamp over the numbers.

@@ -20,6 +20,17 @@ function optionalP(value, className) {
 // nothing can be added below the last printed line.
 const NOTHING_FOLLOWS = '**** Nothing Follows ****'
 
+// Invoiser branding watermark (issue #57), stamped on every .doc-page of
+// both the invoice and the Acknowledgement Receipt. It lives in the body
+// renderers rather than the wrapDocument() twins so the browser preview/
+// print and the server's Playwright PDF can't drift apart. aria-hidden:
+// it's decoration, not document content.
+export const WATERMARK_TEXT = 'Created with Invoiser'
+
+export function renderWatermark() {
+  return `<div class="doc-watermark" aria-hidden="true"><span>${WATERMARK_TEXT}</span></div>`
+}
+
 function pageNumberHtml(pageNumber, totalPages) {
   if (totalPages < 2) return ''
   return `<div class="doc-page-number">Page ${pageNumber} of ${totalPages}</div>`
@@ -135,6 +146,7 @@ function renderOrderDetailsPage(groups, currency, meta, totalPages) {
   // itemized page — page 1's summary table is an aggregate index, not
   // itself the itemized list.
   return `<div class="doc-page order-details">
+    ${renderWatermark()}
     <div class="order-details-header">
       <span>Invoice ${escapeHtml(meta.invoiceNumber) || '—'}</span>
       <span>Order Details</span>
@@ -192,6 +204,7 @@ export function renderInvoiceBody({
     : ''
 
   const page1 = `<div class="doc-page">
+    ${renderWatermark()}
     <header class="doc-head">
       <div class="doc-biller">
         <p class="doc-biller-name">${escapeHtml(biller.name) || 'Your name'}</p>

@@ -1,5 +1,5 @@
 import { computeTotals, formatMoney } from '../utils/calc.js'
-import { escapeHtml, formatDate, renderSignatureBlock } from './templates.js'
+import { escapeHtml, formatDate, renderSignatureBlock, renderWatermark } from './templates.js'
 
 // Acknowledgement Receipt (issue #52) — a short, customer-facing courtesy
 // document confirming a paid invoice's payment was received. Not a new
@@ -129,6 +129,7 @@ export function renderReceiptBody(receipt) {
 
   return `<div class="preview-sheet" data-design="${escapeHtml(designId)}">
   <div class="doc-page doc-receipt">
+    ${renderWatermark()}
     <header class="doc-head">
       <div class="doc-biller">
         <p class="doc-biller-name">${escapeHtml(biller.name) || 'Your name'}</p>
