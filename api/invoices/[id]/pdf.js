@@ -3,6 +3,7 @@ import { renderInvoicePdfBuffer, renderReceiptPdfBuffer } from '../../_lib/rende
 import { computeTotals } from '../../../src/utils/calc.js'
 import { buildReceiptData, normalizeReceiptOptions } from '../../../src/designs/receiptTemplates.js'
 import { getSessionUsername } from '../../_lib/session.js'
+import { requestOrigin } from '../../_lib/requestOrigin.js'
 
 // Server-rendered PDF via Playwright (see _lib/renderInvoicePdf.js) — the
 // same real-Chromium pipeline already proven in production for email
@@ -19,7 +20,7 @@ import { getSessionUsername } from '../../_lib/session.js'
 // can be long; send-email.js uses it).
 export const config = { maxDuration: 30 }
 
-function buildInvoiceData(invoice, biller) {
+function buildInvoiceData(invoice, biller, siteUrl) {
   const totals = computeTotals(invoice.items, invoice.taxPercent, invoice.discountAmount, invoice.capAmount)
   return {
     biller,
@@ -37,6 +38,7 @@ function buildInvoiceData(invoice, biller) {
     signature: invoice.signature,
     signatoryName: invoice.sameAsBusiness ? biller.name : invoice.signatoryName,
     separateItems: invoice.separateItems,
+    siteUrl,
   }
 }
 
@@ -65,13 +67,18 @@ export default async function handler(req, res) {
     return res.status(409).json({ error: 'A receipt is only available once the invoice is paid' })
   }
 
+  // The domain the user is on, for the watermark (issue #57). send-email.js
+  // calls this route with the incoming request's own Host, so emailed PDFs
+  // get the same domain as downloaded ones.
+  const siteUrl = requestOrigin(req)
+
   let pdfBuffer
   try {
     if (isReceipt) {
       const options = normalizeReceiptOptions(req.method === 'POST' ? req.body || {} : req.query)
-      pdfBuffer = await renderReceiptPdfBuffer(buildReceiptData(invoice, biller, options))
+      pdfBuffer = await renderReceiptPdfBuffer({ ...buildReceiptData(invoice, biller, options), siteUrl })
     } else {
-      pdfBuffer = await renderInvoicePdfBuffer(invoice.selectedDesignId, buildInvoiceData(invoice, biller))
+      pdfBuffer = await renderInvoicePdfBuffer(invoice.selectedDesignId, buildInvoiceData(invoice, biller, siteUrl))
     }
   } catch (error) {
     console.error('PDF generation failed', error)

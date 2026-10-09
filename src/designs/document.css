@@ -79,6 +79,9 @@ body {
 }
 
 .doc-watermark span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transform: rotate(-30deg);
   white-space: nowrap;
   font-size: 3.4rem;
@@ -88,6 +91,13 @@ body {
   opacity: 0.08;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+/* The domain line under the brand, e.g. invoiser.app (siteUrl, issue #57). */
+.doc-watermark small {
+  font-size: 0.42em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .doc-page-number {

@@ -129,7 +129,7 @@ export function renderReceiptBody(receipt) {
 
   return `<div class="preview-sheet" data-design="${escapeHtml(designId)}">
   <div class="doc-page doc-receipt">
-    ${renderWatermark()}
+    ${renderWatermark(receipt.siteUrl)}
     <header class="doc-head">
       <div class="doc-biller">
         <p class="doc-biller-name">${escapeHtml(biller.name) || 'Your name'}</p>
