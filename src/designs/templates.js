@@ -20,6 +20,34 @@ function optionalP(value, className) {
 // nothing can be added below the last printed line.
 const NOTHING_FOLLOWS = '**** Nothing Follows ****'
 
+// Invoiser branding watermark (issue #57), stamped on every .doc-page of
+// both the invoice and the Acknowledgement Receipt. It lives in the body
+// renderers rather than the wrapDocument() twins so the browser preview/
+// print and the server's Playwright PDF can't drift apart. aria-hidden:
+// it's decoration, not document content.
+//
+// `siteUrl` is the origin the app is being used from, never hardcoded, so
+// the watermark follows the app to its dedicated domain on its own: the
+// browser wrapper passes window.location.origin (designs/index.js), the
+// server PDF route passes the request's own host (api/_lib/requestOrigin.js).
+// Only the host is printed; anything that doesn't parse as an http(s) URL is
+// dropped, so a bad value just means the plain brand line.
+export const WATERMARK_TEXT = 'Created with Invoiser'
+
+export function siteHost(siteUrl) {
+  try {
+    const url = new URL(siteUrl)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.host : ''
+  } catch {
+    return ''
+  }
+}
+
+export function renderWatermark(siteUrl) {
+  const host = siteHost(siteUrl)
+  return `<div class="doc-watermark" aria-hidden="true"><span>${WATERMARK_TEXT}${host ? `<small>${escapeHtml(host)}</small>` : ''}</span></div>`
+}
+
 function pageNumberHtml(pageNumber, totalPages) {
   if (totalPages < 2) return ''
   return `<div class="doc-page-number">Page ${pageNumber} of ${totalPages}</div>`
@@ -110,7 +138,7 @@ function renderGroupSummaryTable(groups, currency) {
   </table>`
 }
 
-function renderOrderDetailsPage(groups, currency, meta, totalPages) {
+function renderOrderDetailsPage(groups, currency, meta, totalPages, siteUrl) {
   const groupBlocks = groups
     .map((group) => {
       const rows = group.items
@@ -135,6 +163,7 @@ function renderOrderDetailsPage(groups, currency, meta, totalPages) {
   // itemized page — page 1's summary table is an aggregate index, not
   // itself the itemized list.
   return `<div class="doc-page order-details">
+    ${renderWatermark(siteUrl)}
     <div class="order-details-header">
       <span>Invoice ${escapeHtml(meta.invoiceNumber) || '—'}</span>
       <span>Order Details</span>
@@ -167,7 +196,7 @@ export function renderSignatureBlock(signature, signatoryName) {
 // renders the same stylesheet through Playwright, so it paginates the same
 // way.
 export function renderInvoiceBody({
-  designId, biller, client, meta, items, notes, totals, bank, signature, signatoryName, separateItems,
+  designId, biller, client, meta, items, notes, totals, bank, signature, signatoryName, separateItems, siteUrl,
 }) {
   const currency = meta.currency
   const hasBankDetails = bank.holder || bank.bankName || bank.bankAddress || bank.accountNumber || bank.swift
@@ -192,6 +221,7 @@ export function renderInvoiceBody({
     : ''
 
   const page1 = `<div class="doc-page">
+    ${renderWatermark(siteUrl)}
     <header class="doc-head">
       <div class="doc-biller">
         <p class="doc-biller-name">${escapeHtml(biller.name) || 'Your name'}</p>
@@ -244,7 +274,7 @@ export function renderInvoiceBody({
     ${pageNumberHtml(1, totalPages)}
   </div>`
 
-  const page2 = hasPage2 ? renderOrderDetailsPage(groups, currency, meta, totalPages) : ''
+  const page2 = hasPage2 ? renderOrderDetailsPage(groups, currency, meta, totalPages, siteUrl) : ''
 
   return `<div class="preview-sheet" data-design="${escapeHtml(designId)}">${page1}${page2}</div>`
 }

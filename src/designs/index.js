@@ -48,7 +48,7 @@ const FONTS_IMPORT =
 // and — via the Node-safe twin api/_lib/renderInvoiceHtml.js — what gets
 // rendered to a PDF for download/email (see api/_lib/renderInvoicePdf.js).
 export function renderInvoiceHtml(designId, data) {
-  return wrapDocument(renderInvoiceBody({ designId, ...data }))
+  return wrapDocument(renderInvoiceBody({ designId, siteUrl: browserOrigin(), ...data }))
 }
 
 // Acknowledgement Receipt (issue #52) — same shell and [data-design] CSS as
@@ -56,7 +56,15 @@ export function renderInvoiceHtml(designId, data) {
 // acknowledges. `receipt` comes from receiptTemplates.js#buildReceiptData.
 // Server twin: api/_lib/renderInvoiceHtml.js#renderReceiptHtml.
 export function renderReceiptHtml(receipt) {
-  return wrapDocument(renderReceiptBody(receipt))
+  return wrapDocument(renderReceiptBody({ siteUrl: browserOrigin(), ...receipt }))
+}
+
+// Wherever the app is being served from right now (vercel.app today, the
+// dedicated domain after the move), for the watermark (issue #57). The
+// server PDF gets the same value from the request instead, see
+// api/_lib/requestOrigin.js.
+function browserOrigin() {
+  return typeof window === 'undefined' ? '' : window.location.origin
 }
 
 function wrapDocument(body) {

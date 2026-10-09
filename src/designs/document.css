@@ -57,6 +57,47 @@ body {
   aspect-ratio: 210 / 297;
   display: flex;
   flex-direction: column;
+  /* Own stacking context, so .doc-watermark's z-index: -1 paints above
+     this page's paper background but below all of its content. */
+  isolation: isolate;
+}
+
+/* Invoiser branding watermark (issue #57) — see templates.js#renderWatermark.
+   Absolutely positioned, so it takes no part in the page's flex layout.
+   Clipped to the page so the rotated text can't widen a printed sheet. */
+.doc-watermark {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+.doc-watermark span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: rotate(-30deg);
+  white-space: nowrap;
+  font-size: 3.4rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink-soft);
+  opacity: 0.08;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* The domain line under the brand, e.g. invoiser.app (siteUrl, issue #57). */
+.doc-watermark small {
+  font-size: 0.42em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .doc-page-number {
