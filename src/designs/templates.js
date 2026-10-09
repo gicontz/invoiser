@@ -30,14 +30,15 @@ const NOTHING_FOLLOWS = '**** Nothing Follows ****'
 // the watermark follows the app to its dedicated domain on its own: the
 // browser wrapper passes window.location.origin (designs/index.js), the
 // server PDF route passes the request's own host (api/_lib/requestOrigin.js).
-// Only the host is printed; anything that doesn't parse as an http(s) URL is
+// All lowercase, brand and domain alike. Only the host is printed (no
+// https://, no path); anything that doesn't parse as an http(s) URL is
 // dropped, so a bad value just means the plain brand line.
-export const WATERMARK_TEXT = 'Created with Invoiser'
+export const WATERMARK_TEXT = 'created with invoiser'
 
 export function siteHost(siteUrl) {
   try {
     const url = new URL(siteUrl)
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.host : ''
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.host.toLowerCase() : ''
   } catch {
     return ''
   }

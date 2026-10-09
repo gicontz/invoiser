@@ -101,3 +101,10 @@ test('requestOrigin rejects junk hosts and protos', () => {
   assert.equal(requestOrigin({ headers: {} }), '')
   assert.equal(requestOrigin({ headers: { host: 'invoiser.app', 'x-forwarded-proto': 'javascript' } }), 'https://invoiser.app')
 })
+
+test('watermark is all lowercase: brand and bare domain, no protocol', () => {
+  const html = renderInvoiceBody(invoiceArgs({ siteUrl: 'HTTPS://Invoiser.App/Some/Path' }))
+  assert.equal(WATERMARK_TEXT, WATERMARK_TEXT.toLowerCase())
+  assert.match(html, /<span>created with invoiser<small>invoiser\.app<\/small><\/span>/)
+  assert.ok(!/https?:\/\//.test(html.match(/<div class="doc-watermark"[^]*?<\/div>/)[0]))
+})
